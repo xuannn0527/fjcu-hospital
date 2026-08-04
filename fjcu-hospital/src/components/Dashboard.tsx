@@ -5,10 +5,14 @@ import MiddlePanel from './MiddlePanel';
 import RightPanel from './RightPanel';
 
 export default function Dashboard() {
-  const [patients, setPatients] = useState([]); 
-  const [error, setError] = useState(null);
+  // 1. 指定 patients 為陣列型別 (any[])
+  const [patients, setPatients] = useState<any[]>([]); 
   
-  const [selectedPatient, setSelectedPatient] = useState(null); 
+  // 2. 指定 error 可以是字串或 null (string | null)
+  const [error, setError] = useState<string | null>(null);
+  
+  // 3. 指定 selectedPatient 可以是物件或 null (any | null)
+  const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/api/patients')
