@@ -7,10 +7,10 @@ export default function Sidebar() {
 
   // 定義上半部的主要選單，這樣程式碼更乾淨好管理
   const menuItems = [
-    { path: '/triage', icon: <Stethoscope size={24} />, label: '檢傷' },
+    { path: '/triage', icon: <Stethoscope size={24} />, label: '首頁' },
     { path: '/records', icon: <History size={24} />, label: '病歷' },
-    { path: '/statistics', icon: <PieChart size={24} />, label: '統計' },
     { path: '/personnel', icon: <User size={24} />, label: '人員' },
+    { path: '/statistics', icon: <PieChart size={24} />, label: '統計' },
     { path: '/settings', icon: <Settings size={24} />, label: '設定' },
   ];
 
