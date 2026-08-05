@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import LeftPanel from './LeftPanel';
-import Leftcorner from './Leftcorner'; // 1. 引入左下角長條圖統計元件
+import Leftcorner from './Leftcorner'; 
 import MiddlePanel from './MiddlePanel';
 import RightPanel from './RightPanel';
 
@@ -9,7 +9,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
   
-  // 2. 新增狀態：記錄目前點擊了哪一個檢傷級別 (1~5)，null 代表顯示全部
+  const [statusFilter, setStatusFilter] = useState<string>('未處理');
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
 
   useEffect(() => {
@@ -29,10 +29,20 @@ export default function Dashboard() {
       });
   }, []);
 
-  // 3. 根據是否有選擇檢傷級別，來過濾中間要顯示的病患清單
-  const filteredPatients = selectedLevel 
-    ? patients.filter(p => Number(p.triage_level) === selectedLevel)
-    : patients;
+  // ★ 關鍵修改：當切換狀態（未處理 / 觀察中）時，順便把左下角的檢傷級別選取清空 (null)
+  const handleStatusChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    setSelectedLevel(null); // 自動清除左下角的級別選取
+  };
+
+  // 雙重過濾邏輯
+  const filteredPatients = patients.filter(p => {
+    const matchStatus = p.status === statusFilter;
+    const matchLevel = selectedLevel ? Number(p.triage_level) === selectedLevel : true;
+    return matchStatus && matchLevel;
+  });
+
+  const patientsForStats = patients.filter(p => p.status === statusFilter);
 
   return (
     <div style={{
@@ -44,20 +54,22 @@ export default function Dashboard() {
       backgroundColor: '#F8FAFC',
       boxSizing: 'border-box'
     }}>
-      {/* 1. 左側：包含上方總人數概況與下方長條圖統計 */}
+      {/* 1. 左側 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <LeftPanel 
-          totalCount={patients.length} 
+          patients={patients} 
+          statusFilter={statusFilter}
+          setStatusFilter={handleStatusChange} // 帶入會自動清空級別的包裝函式
           error={error} 
         />
         <Leftcorner 
-          patients={patients} 
+          patients={patientsForStats} 
           selectedLevel={selectedLevel} 
           onSelectLevel={setSelectedLevel} 
         />
       </div>
 
-      {/* 2. 中間：傳入被過濾後的清單 */}
+      {/* 2. 中間 */}
       <MiddlePanel 
         patients={filteredPatients} 
         error={error} 
