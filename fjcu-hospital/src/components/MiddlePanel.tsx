@@ -62,7 +62,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
         <div>
           <h3 style={{ fontSize: '16px', color: '#1E293B', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ color: '#EF4444' }}>⚠️</span> 病患風險排序清單
+            <span style={{ color: '#EF4444' }}>🔔</span> 病患風險排序清單
           </h3>
           <span style={{ fontSize: '12px', color: '#64748B' }}>即時分析生命徵象與3小時內惡化預測風險</span>
         </div>
