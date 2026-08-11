@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Dashboard from './components/Dashboard';
+import Personnel from './components/Personnel';
 import Login from './components/Login'; 
 import Settings from './components/Settings'; 
 import './App.css'; 
@@ -55,7 +56,7 @@ function App() {
                 element={<Settings isDarkMode={isDarkMode} onToggleDarkMode={setIsDarkMode} />} 
               />
 
-              <Route path="/personnel" element={<div style={{ padding: '24px', color: isDarkMode ? 'white' : 'black' }}><h2>人員系統</h2><p>開發中...</p></div>} />
+              <Route path="/personnel" element={<Personnel />} />
               <Route path="/statistics" element={<div style={{ padding: '24px', color: isDarkMode ? 'white' : 'black' }}><h2>統計系統</h2><p>開發中...</p></div>} />
             </Routes>
           </div>
