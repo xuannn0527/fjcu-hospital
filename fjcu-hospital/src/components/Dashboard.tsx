@@ -20,7 +20,12 @@ export default function Dashboard() {
       .then(response => response.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setPatients(data);
+          // 暫時為測試資料補上 status，直到後端 API 實作真實的狀態邏輯
+          const normalizedData = data.map(p => ({
+            ...p,
+            status: p.status || '未處理' 
+          }));
+          setPatients(normalizedData);
           setError(null);
         } else {
           setError(data.error || "無法讀取資料");
@@ -42,17 +47,18 @@ export default function Dashboard() {
 
   const filteredPatients = patients.filter(p => {
     const matchStatus = p.status === statusFilter;
-    const matchLevel = selectedLevel ? Number(p.triage_level) === selectedLevel : true;
+    // ★ 核心修改：配合新資料表，將 triage_level 改為 final_level
+    const matchLevel = selectedLevel ? Number(p.final_level) === selectedLevel : true;
     return matchStatus && matchLevel;
   });
 
   const patientsForStats = patients.filter(p => p.status === statusFilter);
 
   return (
-    // ★ 1. 外層容器加上 position: 'relative'，作為遮罩的定位基準
+    // 外層容器加上 position: 'relative'，作為遮罩的定位基準
     <div style={{ position: 'relative', height: '100vh', backgroundColor: '#F8FAFC', overflow: 'hidden' }}>
       
-      {/* ★ 2. 原本的儀表板主畫面 (讓它第一時間就把四個框畫出來) */}
+      {/* 原本的儀表板主畫面 */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 2fr 1.5fr',
@@ -64,7 +70,7 @@ export default function Dashboard() {
         opacity: isLoading ? 0.5 : 1,
         filter: isLoading ? 'blur(3px)' : 'none',
         pointerEvents: isLoading ? 'none' : 'auto',
-        transition: 'all 0.4s ease-in-out' // 讓載入完成時有滑順的漸變效果
+        transition: 'all 0.4s ease-in-out' 
       }}>
         {/* 左側 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -79,17 +85,17 @@ export default function Dashboard() {
         <RightPanel patient={selectedPatient} />
       </div>
 
-      {/* ★ 3. 懸浮在正中央的半透明遮罩與心跳動畫 */}
+      {/* 懸浮在正中央的半透明遮罩與心跳動畫 */}
       {isLoading && (
         <div style={{
           position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0, // 撐滿整個外層容器
+          top: 0, left: 0, right: 0, bottom: 0, 
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: 'rgba(248, 250, 252, 0.4)', // 帶有一點點白色的半透明背景
-          zIndex: 50, // 確保動畫蓋在所有框框的上面
+          backgroundColor: 'rgba(248, 250, 252, 0.4)', 
+          zIndex: 50, 
           gap: '24px'
         }}>
           

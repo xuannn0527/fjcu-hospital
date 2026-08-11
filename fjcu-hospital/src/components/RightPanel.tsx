@@ -5,19 +5,23 @@ interface SimilarCase {
   treatment_summary: string;
 }
 
+// ★ 1. 更新介面定義，對應新的 MySQL 關聯資料表欄位
 interface Patient {
   patient_id: string;
-  chief_complaint?: string;
-  triage_level?: number | string;
+  name?: string;
+  sentiment?: string; // 替代原本的 chief_complaint
+  past_medical_history_y?: string;
+  final_level?: number | string; // 替代原本的 triage_level
   risk_score: number;
   temperature?: number | string;
   heart_rate?: number | string;
-  sbp?: number | string;
-  dbp?: number | string;
+  blood_pressure_sys?: number | string; // 替代原本的 sbp
+  blood_pressure_dia?: number | string; // 替代原本的 dbp
   respiratory_rate?: number | string;
   spo2?: number | string;
   past_medical_history?: string;
-  drug_allergies?: string;
+  drug_allergy?: string; // 替代原本的 drug_allergies
+  allergy?: string;
   xai_factors?: { name: string; impact: number }[];
   similar_cases?: SimilarCase;
 }
@@ -27,14 +31,10 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({ patient }: RightPanelProps) {
-  // 記錄被勾選的處置建議 (儲存文字陣列)
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  // 控制是否展開手動輸入表單
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
-  // 手動輸入的內容
   const [manualNote, setManualNote] = useState<string>('');
 
-  // 當切換選中的病患時，重置所有勾選與輸入狀態
   useEffect(() => {
     setSelectedItems([]);
     setShowManualInput(false);
@@ -47,13 +47,13 @@ export default function RightPanel({ patient }: RightPanelProps) {
     return '#10B981';
   };
 
-  // 動態推算 XAI 歸因
   const getXaiContribution = (p: Patient) => {
     if (p.xai_factors && p.xai_factors.length > 0) return p.xai_factors;
     const list: { name: string; impact: number }[] = [];
     if (Number(p.spo2) < 95) list.push({ name: `血氧濃度偏低 (${p.spo2}%)`, impact: 42 });
     if (Number(p.heart_rate) > 100) list.push({ name: `心率異常偏高 (${p.heart_rate} bpm)`, impact: 28 });
-    if (Number(p.triage_level) <= 2) list.push({ name: `檢傷高急迫性 (${p.triage_level} 級)`, impact: 18 });
+    // ★ 2. 將 XAI 判斷邏輯改為 final_level
+    if (Number(p.final_level) <= 2) list.push({ name: `檢傷高急迫性 (${p.final_level} 級)`, impact: 18 });
     if (Number(p.temperature) >= 38) list.push({ name: `體溫發熱 (${p.temperature} °C)`, impact: 12 });
 
     if (list.length === 0) {
@@ -67,7 +67,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
     return list.sort((a, b) => b.impact - a.impact);
   };
 
-  // 根據風險程度產生 3~5 條處置選項
   const getAiRecommendations = (p: Patient) => {
     if (p.risk_score >= 80) {
       return [
@@ -91,7 +90,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
     ];
   };
 
-  // 處理 Checkbox 切換
   const handleCheckboxChange = (item: string) => {
     if (selectedItems.includes(item)) {
       setSelectedItems(selectedItems.filter(i => i !== item));
@@ -100,7 +98,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
     }
   };
 
-  // 送出轉入觀察
   const handleSubmit = () => {
     if (!patient) return;
 
@@ -124,6 +121,10 @@ export default function RightPanel({ patient }: RightPanelProps) {
   const xaiData = patient ? getXaiContribution(patient) : [];
   const recommendations = patient ? getAiRecommendations(patient) : [];
 
+  // 統合過敏史資訊 (因為 patients 表和 vital_signs 表都有紀錄，以有內容的為主)
+  const allergyInfo = patient?.drug_allergy && patient.drug_allergy !== '無' ? patient.drug_allergy : (patient?.allergy || '無');
+  const hasAllergy = allergyInfo !== '無' && allergyInfo !== '無紀錄';
+
   return (
     <div
       style={{
@@ -138,7 +139,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
         boxSizing: 'border-box'
       }}
     >
-      {/* 標題 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
         <h3 style={{ fontSize: '16px', color: '#1E293B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ color: '#3B82F6' }}></span> AI輔助決策
@@ -147,15 +147,17 @@ export default function RightPanel({ patient }: RightPanelProps) {
 
       {patient ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {/* 主訴、過去病史、藥物過敏 */}
+          
             <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold' }}>
-              <span style={{ color: '#64748B', marginRight: '6px' }}>病患編號：</span>
-              <span>{patient.patient_id}</span>
+              <span style={{ color: '#64748B', marginRight: '6px' }}>病患：</span>
+              {/* ★ 加入病人姓名顯示 */}
+              <span>{patient.patient_id} {patient.name}</span>
             </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px 12px' }}>
-              <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>主訴</span>
-              <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold' }}>{patient.chief_complaint || '無紀錄'}</span>
+              <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>主訴 / 心理與情緒狀態</span>
+              {/* ★ 3. 改為讀取 sentiment 或 past_medical_history_y */}
+              <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold' }}>{patient.sentiment || patient.past_medical_history_y || '無紀錄'}</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -164,49 +166,45 @@ export default function RightPanel({ patient }: RightPanelProps) {
                 <span style={{ fontSize: '12px', color: '#334155' }}>{patient.past_medical_history || '無紀錄'}</span>
               </div>
               <div style={{ 
-                backgroundColor: patient.drug_allergies ? '#FEF2F2' : '#F8FAFC', 
-                border: `1px solid ${patient.drug_allergies ? '#FCA5A5' : '#E2E8F0'}`, 
+                backgroundColor: hasAllergy ? '#FEF2F2' : '#F8FAFC', 
+                border: `1px solid ${hasAllergy ? '#FCA5A5' : '#E2E8F0'}`, 
                 borderRadius: '8px', 
                 padding: '8px 12px' 
               }}>
-                <span style={{ fontSize: '11px', color: patient.drug_allergies ? '#EF4444' : '#64748B', display: 'block', fontWeight: 'bold' }}>
+                <span style={{ fontSize: '11px', color: hasAllergy ? '#EF4444' : '#64748B', display: 'block', fontWeight: 'bold' }}>
                   藥物過敏
                 </span>
-                <span style={{ fontSize: '12px', color: patient.drug_allergies ? '#991B1B' : '#334155' }}>
-                  {patient.drug_allergies || '無紀錄'}
+                <span style={{ fontSize: '12px', color: hasAllergy ? '#991B1B' : '#334155' }}>
+                  {allergyInfo}
                 </span>
               </div>
             </div>
           </div>
-          {/* 生理徵象*/}
+          
           <div>
             <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
               生理徵象
             </span>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-              {/* 體溫 */}
               <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>體溫</span>
                 <strong style={{ fontSize: '15px', color: '#0F172A' }}>{patient.temperature ?? '--'}<span style={{ fontSize: '11px' }}>°C</span></strong>
               </div>
-              {/* 心跳 */}
               <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>心跳</span>
                 <strong style={{ fontSize: '15px', color: '#0F172A' }}>{patient.heart_rate ?? '--'}<span style={{ fontSize: '11px' }}>bpm</span></strong>
               </div>
-              {/* 血壓 */}
               <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>血壓</span>
                 <strong style={{ fontSize: '14px', color: '#0F172A' }}>
-                  {patient.sbp && patient.dbp ? `${patient.sbp}/${patient.dbp}` : '--'}
+                  {/* ★ 4. 改為讀取 blood_pressure_sys 與 blood_pressure_dia */}
+                  {patient.blood_pressure_sys && patient.blood_pressure_dia ? `${patient.blood_pressure_sys}/${patient.blood_pressure_dia}` : '--'}
                 </strong>
               </div>
-              {/* 呼吸 */}
               <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>呼吸</span>
                 <strong style={{ fontSize: '15px', color: '#0F172A' }}>{patient.respiratory_rate ?? '--'}<span style={{ fontSize: '11px' }}>次</span></strong>
               </div>
-              {/* 血氧 */}
               <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>血氧</span>
                 <strong style={{ fontSize: '15px', color: Number(patient.spo2) < 95 ? '#EF4444' : '#0F172A' }}>
@@ -215,11 +213,11 @@ export default function RightPanel({ patient }: RightPanelProps) {
               </div>
             </div>
           </div>
-          {/* XAI 風險分析 */}
+          
           <div style={{ backgroundColor: patient.risk_score >= 80 ? '#FEF2F2' : patient.risk_score >= 50 ? '#FFFBEB' : '#ECFDF5', border: `1px solid ${patient.risk_score >= 80 ? '#FCA5A5' : patient.risk_score >= 50 ? '#FDE68A' : '#A7F3D0'}`, borderRadius: '8px', padding: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ fontSize: '13px', fontWeight: 'bold', color: riskColor }}>XAI惡化風險預測值</span>
-              <strong style={{ fontSize: '22px', color: riskColor }}>{patient.risk_score}%</strong>
+              <strong style={{ fontSize: '22px', color: riskColor }}>{patient.risk_score || 0}%</strong>
             </div>
 
             <div style={{ marginTop: '8px' }}>
@@ -239,16 +237,13 @@ export default function RightPanel({ patient }: RightPanelProps) {
             </div>
           </div>
 
-          {/* 過去 3 小時歷史相似案例 */}
           <div style={{ backgroundColor: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '8px', padding: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-              
               <strong style={{ fontSize: '12px', color: '#0369A1' }}>
                 過去 3 小時相似案例 ({patient.similar_cases?.count ?? (patient.risk_score > 60 ? 4 : 12)} 例)
               </strong>
             </div>
             <p style={{ fontSize: '12px', color: '#0C4A6E', margin: 0, lineHeight: '1.5' }}>
-              
               {patient.similar_cases?.treatment_summary || 
                 (patient.risk_score >= 80 
                   ? '85% 案例採高流量氧氣治療並優先排床入住 ICU/急救室，平均處置時間 12 分鐘。'
@@ -256,14 +251,12 @@ export default function RightPanel({ patient }: RightPanelProps) {
             </p>
           </div>
 
-          {/* 多選項 AI 處置建議 + 手動輸入按鈕 */}
           <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '14px' }}>
             <h4 style={{ fontSize: '13px', color: '#1E293B', margin: '0 0 10px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>AI 處置建議 (勾選欲採納之項目)</span>
               <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 'normal' }}>已選 {selectedItems.length} 項</span>
             </h4>
 
-            {/* Checkbox 處置列表 */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {recommendations.map((item, idx) => {
                 const isChecked = selectedItems.includes(item);
@@ -297,7 +290,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
               })}
             </div>
 
-            {/* 手動輸入開關按鈕 */}
             <div style={{ marginTop: '12px' }}>
               <button
                 onClick={() => setShowManualInput(!showManualInput)}
@@ -320,7 +312,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
                 {showManualInput ? '▲ 折疊手動輸入' : '手動輸入/補充醫囑'}
               </button>
 
-              {/* 展開的手動輸入文字框 */}
               {showManualInput && (
                 <div style={{ marginTop: '8px' }}>
                   <textarea
@@ -344,7 +335,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
             </div>
           </div>
 
-          {/* 轉入觀察按鈕 */}
           <button
             onClick={handleSubmit}
             style={{
@@ -366,7 +356,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
 
         </div>
       ) : (
-        /* 未點擊病患時的 Prompt 引導畫面 */
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#94A3B8', textAlign: 'center', padding: '20px' }}>
           <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '12px', border: '1px dashed #CBD5E1' }}>
             👈

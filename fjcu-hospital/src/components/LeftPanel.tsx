@@ -1,7 +1,15 @@
-export default function LeftPanel({ patients = [], statusFilter, setStatusFilter, error }: any) {
+// 定義傳入的 Props 型別，提升程式碼嚴謹度
+interface LeftPanelProps {
+  patients?: any[];
+  statusFilter: string;
+  setStatusFilter: (status: string) => void;
+  error: string | null;
+}
+
+export default function LeftPanel({ patients = [], statusFilter, setStatusFilter, error }: LeftPanelProps) {
   // 動態計算資料庫中符合的數量
-  const unhandledCount = patients.filter((p: any) => p.status === '未處理').length;
-  const observingCount = patients.filter((p: any) => p.status === '觀察中').length;
+  const unhandledCount = patients.filter(p => p.status === '未處理').length;
+  const observingCount = patients.filter(p => p.status === '觀察中').length;
 
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>

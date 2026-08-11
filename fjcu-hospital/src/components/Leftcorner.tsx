@@ -10,7 +10,8 @@ export default function Leftcorner({ patients = [], selectedLevel, onSelectLevel
   const counts = [1, 2, 3, 4, 5].map(level => {
     return {
       level,
-      count: patients.filter((p: any) => Number(p.triage_level) === level).length
+      // ★ 核心修改：將 p.triage_level 改為新資料表的 p.final_level
+      count: patients.filter((p: any) => Number(p.final_level) === level).length
     };
   });
 
