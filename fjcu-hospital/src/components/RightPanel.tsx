@@ -141,7 +141,7 @@ export default function RightPanel({ patient }: RightPanelProps) {
       {/* 標題 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
         <h3 style={{ fontSize: '16px', color: '#1E293B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ color: '#3B82F6' }}></span> AI 決策輔助與 XAI 分析
+          <span style={{ color: '#3B82F6' }}></span> AI輔助決策
         </h3>
       </div>
 
