@@ -134,6 +134,7 @@ export default function RightPanel({ patient }: RightPanelProps) {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        minHeight: 0,
         boxSizing: 'border-box'
       }}
     >
@@ -145,7 +146,7 @@ export default function RightPanel({ patient }: RightPanelProps) {
       </div>
 
       {patient ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {/* 主訴、過去病史、藥物過敏 */}
             <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold' }}>
               <span style={{ color: '#64748B', marginRight: '6px' }}>病患編號：</span>
