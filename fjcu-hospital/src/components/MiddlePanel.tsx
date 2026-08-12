@@ -9,7 +9,6 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      // ★ 更新欄位名稱：triage_level 改為 final_level
       setSortOrder(field === 'risk_score' || field === 'final_level' ? 'desc' : 'asc'); 
     }
   };
@@ -18,7 +17,6 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
     let valA = a[sortField];
     let valB = b[sortField];
 
-    // ★ 更新欄位名稱：triage_level 改為 final_level
     if (sortField === 'final_level') {
       valA = Number(valA);
       valB = Number(valB);
@@ -26,7 +24,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
     }
 
     if (sortField === 'risk_score') {
-      valA = Number(valA) || 0; // 避免風險分數為空時報錯
+      valA = Number(valA) || 0;
       valB = Number(valB) || 0;
     }
 
@@ -41,32 +39,10 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
     return '#10B981'; 
   };
 
-  // 升級版時間格式化：支援 MySQL 的 TIMESTAMP (例如 "2026-08-11 14:30:00" 或 ISO 格式)
-  const formatTime = (timeVal: any) => {
-    if (!timeVal) return '';
-
-    // 如果後端傳過來的是像 34200 這種數字（代表當天的秒數）
-    if (typeof timeVal === 'number' || (!isNaN(Number(timeVal)) && !String(timeVal).includes('-') && !String(timeVal).includes(':'))) {
-      const totalSeconds = Number(timeVal);
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-    }
-
-    // 如果是資料庫標準時間格式，嘗試用 Date 解析
-    const dateObj = new Date(timeVal);
-    if (!isNaN(dateObj.getTime())) {
-      return `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
-    }
-
-    // 備用方案：如果是純字串格式（例如 "09:30:00"）
-    const str = String(timeVal);
-    return str.length >= 5 ? str.substring(0, 5) : str;
-  };
-
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
       
+      {/* 標題與圖例區塊 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
         <div>
           <h3 style={{ fontSize: '16px', color: '#1E293B', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -82,17 +58,16 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 2fr 30px', padding: '0 16px 8px 16px', fontSize: '12px', color: '#64748B', fontWeight: 'bold', borderBottom: '1px solid #E2E8F0', alignItems: 'center' }}>
+      {/* 表格標頭：調整各欄位寬度比例以保持安全距離 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 2.6fr 1fr 2fr 30px', padding: '0 16px 8px 16px', fontSize: '12px', color: '#64748B', fontWeight: 'bold', borderBottom: '1px solid #E2E8F0', alignItems: 'center' }}>
         <div onClick={() => handleSort('patient_id')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
           病患 ID {sortField === 'patient_id' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
         </div>
         
-        {/* ★ 更新欄位名稱：arrival_time 改為 created_at */}
-        <div onClick={() => handleSort('created_at')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-          到院 {sortField === 'created_at' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
+        <div onClick={() => handleSort('triage_id')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          就診序號 (PK) {sortField === 'triage_id' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
         </div>
 
-        {/* ★ 更新欄位名稱：triage_level 改為 final_level */}
         <div onClick={() => handleSort('final_level')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
           檢傷 {sortField === 'final_level' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
         </div>
@@ -104,11 +79,13 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
         <div></div>
       </div>
 
+      {/* 病患清單列表 */}
       <div style={{ flex: 1, overflowY: 'auto', marginTop: '8px' }}>
         {sortedPatients.length > 0 ? (
           sortedPatients.map((patient: any) => {
             const isSelected = selectedPatient?.patient_id === patient.patient_id;
             const riskColor = getRiskColor(patient.risk_score || 0);
+            const isObserving = patient.status === '观察中' || patient.status === '觀察中';
 
             return (
               <div 
@@ -118,7 +95,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   padding: '14px 16px', 
                   borderBottom: '1px solid #F1F5F9',
                   display: 'grid',
-                  gridTemplateColumns: '2fr 1fr 1fr 2fr 30px',
+                  gridTemplateColumns: '1.8fr 2.6fr 1fr 2fr 30px',
                   alignItems: 'center',
                   cursor: 'pointer',
                   backgroundColor: isSelected ? '#EFF6FF' : 'transparent',
@@ -127,22 +104,50 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   marginBottom: '4px'
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <strong style={{ fontSize: '15px', color: '#1E293B' }}>
-                    {/* ★ 加入病人姓名顯示 */}
-                    {patient.patient_id} <span style={{ fontSize: '13px', fontWeight: 'normal', color: '#475569' }}>{patient.name}</span>
-                  </strong>
-                  {/* ★ 將主述改為讀取新資料表的 sentiment 或 past_medical_history_y */}
+                {/* 1. 病患 ID 與主述 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <strong style={{ fontSize: '15px', color: '#1E293B' }}>
+                      {patient.patient_id}
+                    </strong>
+                    {isObserving && (
+                      <span style={{ 
+                        backgroundColor: '#FFEDD5', 
+                        color: '#C2410C', 
+                        fontSize: '10px', 
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        fontWeight: 'bold' 
+                      }}>
+                        觀察中
+                      </span>
+                    )}
+                  </div>
                   <span style={{ fontSize: '12px', color: '#64748B' }}>
                     {patient.sentiment || patient.past_medical_history_y || '無主述紀錄'}
                   </span>
                 </div>
 
-                <span style={{ fontSize: '13px', color: '#64748B' }}>
-                  {/* ★ 改用 created_at */}
-                  {formatTime(patient.created_at)}
-                </span>
+                {/* 2. 就診序號 (PK) */}
+                <div>
+                  <span style={{ 
+                    display: 'inline-block',
+                    backgroundColor: '#F1F5F9', 
+                    color: '#475569', 
+                    padding: '4px 8px', 
+                    borderRadius: '6px', 
+                    fontSize: '11px', 
+                    fontFamily: 'monospace',
+                    wordBreak: 'break-all',
+                    maxWidth: '180px',
+                    lineHeight: '1.3',
+                    border: '1px solid #E2E8F0'
+                  }}>
+                    {patient.triage_id || '未編號'}
+                  </span>
+                </div>
 
+                {/* 3. 檢傷級數 */}
                 <div>
                   <span style={{ 
                     padding: '4px 10px', 
@@ -153,11 +158,11 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                     fontSize: '12px',
                     border: `1px solid ${Number(patient.final_level) <= 2 ? '#FCA5A5' : '#FDE047'}`
                   }}>
-                    {/* ★ 改用 final_level */}
-                    {patient.final_level} 級
+                    {patient.final_level ? `${patient.final_level} 級` : '未分級'}
                   </span>
                 </div>
 
+                {/* 4. 惡化風險與進度條 */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <strong style={{ color: riskColor, width: '36px', fontSize: '14px' }}>
                     {patient.risk_score || 0}%
@@ -173,6 +178,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   </div>
                 </div>
 
+                {/* 5. 箭頭按鈕 */}
                 <div style={{ textAlign: 'right', color: '#94A3B8', fontSize: '16px' }}>
                   &gt;
                 </div>

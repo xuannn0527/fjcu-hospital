@@ -4,16 +4,17 @@ interface LeftPanelProps {
   statusFilter: string;
   setStatusFilter: (status: string) => void;
   error: string | null;
+  alertCount?: number; // 新增：觀察區突發警示數量（用於鈴鐺徽章）
 }
 
-export default function LeftPanel({ patients = [], statusFilter, setStatusFilter, error }: LeftPanelProps) {
+export default function LeftPanel({ patients = [], statusFilter, setStatusFilter, error, alertCount = 0 }: LeftPanelProps) {
   // 動態計算資料庫中符合的數量
   const unhandledCount = patients.filter(p => p.status === '未處理').length;
   const observingCount = patients.filter(p => p.status === '觀察中').length;
 
   return (
     <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-      <h3 style={{ fontSize: '14px', color: '#64748B', marginBottom: '8px', fontWeight: 'normal' }}>當前候診人數</h3>
+      <h3 style={{ fontSize: '14px', color: '#64748B', marginBottom: '8px', fontWeight: 'normal' }}>當前候診與觀察</h3>
       
       {error ? (
         <p style={{ color: 'red' }}>連線問題: {error}</p>
@@ -44,10 +45,11 @@ export default function LeftPanel({ patients = [], statusFilter, setStatusFilter
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#EF4444' }}>{unhandledCount}</div>
             </div>
 
-            {/* 觀察中卡片 */}
+            {/* 觀察中卡片 (帶有右上角鈴鐺警示紅點) */}
             <div 
               onClick={() => setStatusFilter('觀察中')}
               style={{ 
+                position: 'relative', // 讓內部絕對定位的鈴鐺徽章對齊
                 flex: 1, 
                 padding: '12px', 
                 borderRadius: '12px', 
@@ -58,6 +60,25 @@ export default function LeftPanel({ patients = [], statusFilter, setStatusFilter
                 transition: 'all 0.2s'
               }}
             >
+              {/* 觀察中右上角警示鈴鐺徽章 */}
+              {alertCount > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-6px',
+                  right: '-6px',
+                  backgroundColor: '#FF4D4F',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontWeight: 'bold',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                  border: '2px solid #FFFFFF'
+                }}>
+                  {alertCount}
+                </div>
+              )}
+
               <div style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 'bold', marginBottom: '4px' }}>觀察中</div>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3B82F6' }}>{observingCount}</div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import LeftPanel from './LeftPanel';
+import Leftmiddle, { type ObservationAlert } from './Leftmiddle';
 import Leftcorner from './Leftcorner'; 
 import MiddlePanel from './MiddlePanel';
 import RightPanel from './RightPanel';
@@ -20,7 +21,6 @@ export default function Dashboard() {
       .then(response => response.json())
       .then(data => {
         if (Array.isArray(data)) {
-          // 暫時為測試資料補上 status，直到後端 API 實作真實的狀態邏輯
           const normalizedData = data.map(p => ({
             ...p,
             status: p.status || '未處理' 
@@ -45,9 +45,18 @@ export default function Dashboard() {
     setSelectedLevel(null); 
   };
 
+  // 動態從後端撈回的 patients 中篩選出「觀察中」且帶有警示訊息的病患
+  const observationAlerts: ObservationAlert[] = patients
+    .filter(p => p.status === '觀察中' && p.alert_message)
+    .map(p => ({
+      id: p.patient_id,
+      patientId: p.patient_id,
+      medicalNumber: p.medical_number || '無病歷號',
+      alertMessage: p.alert_message
+    }));
+
   const filteredPatients = patients.filter(p => {
     const matchStatus = p.status === statusFilter;
-    // ★ 核心修改：配合新資料表，將 triage_level 改為 final_level
     const matchLevel = selectedLevel ? Number(p.final_level) === selectedLevel : true;
     return matchStatus && matchLevel;
   });
@@ -55,10 +64,9 @@ export default function Dashboard() {
   const patientsForStats = patients.filter(p => p.status === statusFilter);
 
   return (
-    // 外層容器加上 position: 'relative'，作為遮罩的定位基準
     <div style={{ position: 'relative', height: '100vh', backgroundColor: '#F8FAFC', overflow: 'hidden' }}>
       
-      {/* 原本的儀表板主畫面 */}
+      {/* 儀表板主畫面 */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: '1fr 2fr 1.5fr',
@@ -66,16 +74,34 @@ export default function Dashboard() {
         padding: '24px',
         height: '100%',
         boxSizing: 'border-box',
-        // 載入中時：降低透明度、加上一點點模糊效果、並禁止點擊
         opacity: isLoading ? 0.5 : 1,
         filter: isLoading ? 'blur(3px)' : 'none',
         pointerEvents: isLoading ? 'none' : 'auto',
         transition: 'all 0.4s ease-in-out' 
       }}>
-        {/* 左側 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <LeftPanel patients={patients} statusFilter={statusFilter} setStatusFilter={handleStatusChange} error={error} />
-          <Leftcorner patients={patientsForStats} selectedLevel={selectedLevel} onSelectLevel={setSelectedLevel} />
+        {/* 左側欄位組合 (LeftPanel -> Leftmiddle -> Leftcorner) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+          <LeftPanel 
+            patients={patients} 
+            statusFilter={statusFilter} 
+            setStatusFilter={handleStatusChange} 
+            error={error} 
+            alertCount={observationAlerts.length} 
+          />
+          
+          <Leftmiddle 
+            alerts={observationAlerts} 
+            onSelectPatient={(patientId) => {
+              const found = patients.find(p => p.patient_id === patientId);
+              if (found) setSelectedPatient(found);
+            }} 
+          />
+
+          <Leftcorner 
+            patients={patientsForStats} 
+            selectedLevel={selectedLevel} 
+            onSelectLevel={setSelectedLevel} 
+          />
         </div>
 
         {/* 中間 */}
@@ -85,7 +111,7 @@ export default function Dashboard() {
         <RightPanel patient={selectedPatient} />
       </div>
 
-      {/* 懸浮在正中央的半透明遮罩與心跳動畫 */}
+      {/* 載入中遮罩與動畫 */}
       {isLoading && (
         <div style={{
           position: 'absolute',
@@ -98,8 +124,6 @@ export default function Dashboard() {
           zIndex: 50, 
           gap: '24px'
         }}>
-          
-          {/* 動態心跳外框 */}
           <div style={{
             position: 'relative', width: '80px', height: '80px',
             display: 'flex', justifyContent: 'center', alignItems: 'center',
@@ -113,7 +137,6 @@ export default function Dashboard() {
             <Activity color="#3B82F6" size={36} style={{ animation: 'pulse-icon 2s ease-in-out infinite' }} />
           </div>
 
-          {/* 專業的進度提示文字 */}
           <div style={{ textAlign: 'center' }}>
             <p style={{ color: '#1E293B', fontSize: '18px', fontWeight: '600', margin: '0 0 8px 0' }}>
               載入急診即時數據
@@ -123,7 +146,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* 定義 CSS 動畫關鍵影格 */}
           <style>
             {`
               @keyframes pulse-ring {
