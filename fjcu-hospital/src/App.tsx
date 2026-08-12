@@ -6,6 +6,8 @@ import Dashboard from './components/Dashboard';
 import Personnel from './components/Personnel';
 import Login from './components/Login'; 
 import Settings from './components/Settings'; 
+import Records from './components/Records';
+import Statistics from './components/Statistics';
 import './App.css'; 
 
 function App() {
@@ -43,12 +45,8 @@ function App() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/triage" element={<Dashboard />} />
-              <Route path="/records" element={
-                <div style={{ padding: '24px', color: isDarkMode ? 'white' : 'black' }}>
-                  <h2>病歷系統</h2>
-                  <p>這裡是未來的病歷頁面，開發中...</p>
-                </div>
-              } />
+              <Route path="/records" element={<Records isDarkMode={isDarkMode} />} />
+              <Route path="/statistics" element={<Statistics isDarkMode={isDarkMode} />} />
               
               {/* 3. 將 isDarkMode 與 setIsDarkMode 傳遞給 Settings */}
               <Route 
@@ -57,7 +55,6 @@ function App() {
               />
 
               <Route path="/personnel" element={<Personnel />} />
-              <Route path="/statistics" element={<div style={{ padding: '24px', color: isDarkMode ? 'white' : 'black' }}><h2>統計系統</h2><p>開發中...</p></div>} />
             </Routes>
           </div>
 
