@@ -5,22 +5,32 @@ interface SimilarCase {
   treatment_summary: string;
 }
 
-// ★ 1. 更新介面定義，對應新的 MySQL 關聯資料表欄位
+// ★ 介面定義，對應新的 MySQL 關聯資料表欄位
 interface Patient {
-  patient_id: string;
-  name?: string;
-  sentiment?: string; // 替代原本的 chief_complaint
+  patient_id: string;//患者ID
+  name?: string;//患者姓名
+  triage_id?: string; // 檢傷單號 / 就診序號
+  medical_number?: string;
+  gender?: string;
+  birth_date?: string;
+  sentiment?: string; // 主述
   past_medical_history_y?: string;
-  final_level?: number | string; // 替代原本的 triage_level
+  do_not_treat?: string; //禁治療資訊
+  final_level?: number | string; //檢傷分類
   risk_score: number;
   temperature?: number | string;
   heart_rate?: number | string;
-  blood_pressure_sys?: number | string; // 替代原本的 sbp
-  blood_pressure_dia?: number | string; // 替代原本的 dbp
+  blood_pressure_sys?: number | string; 
+  blood_pressure_dia?: number | string; 
+  blood_sugar?: number | string; // 血糖
+  pain_score?: number; // 疼痛指數
+  gcs_eye?: number; // GCS Eye
+  gcs_verbal?: number; // GCS Verbal
+  gcs_motor?: number; // GCS Motor
   respiratory_rate?: number | string;
   spo2?: number | string;
   past_medical_history?: string;
-  drug_allergy?: string; // 替代原本的 drug_allergies
+  drug_allergy?: string; 
   allergy?: string;
   xai_factors?: { name: string; impact: number }[];
   similar_cases?: SimilarCase;
@@ -31,6 +41,7 @@ interface RightPanelProps {
 }
 
 export default function RightPanel({ patient }: RightPanelProps) {
+  console.log("傳入 RightPanel 的 patient 資料:", patient);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [manualNote, setManualNote] = useState<string>('');
@@ -139,48 +150,108 @@ export default function RightPanel({ patient }: RightPanelProps) {
         boxSizing: 'border-box'
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #F1F5F9', paddingBottom: '12px' }}>
-        <h3 style={{ fontSize: '16px', color: '#1E293B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ color: '#3B82F6' }}></span> AI輔助決策
-        </h3>
-      </div>
+    <div
+  style={{
+    display: 'flex',
+    justify: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
+    borderBottom: '1px solid #F1F5F9',
+    paddingBottom: '12px',
+  }}
+>
+  <h3
+    style={{
+      fontSize: '16px',
+      color: '#1E293B',
+      margin: 0,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+    }}
+  >
+    <span style={{ color: '#3B82F6' }}>👤</span>
+    {patient ? (
+      <span>
+        {patient.name || '未提供姓名'}{' '}
+        <span
+          style={{ fontSize: '13px', color: '#64748B', fontWeight: 'normal' }}
+        >
+          ({patient.patient_id})
+        </span>
+      </span>
+    ) : (
+      '請選擇患者'
+    )}
+  </h3>
+
+  {patient && (
+    <div
+      style={{
+        fontSize: '12px',
+        color: '#475569',
+        backgroundColor: '#F1F5F9',
+        padding: '4px 8px',
+        borderRadius: '6px',
+        fontWeight: '500',
+      }}
+    >
+      就診序號:{' '}
+      <span style={{ color: '#0F172A', fontWeight: 'bold' }}>
+        {patient.triage_id ?? '無序號'}
+      </span>
+    </div>
+  )}
+</div>
 
       {patient ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          
-            <div style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold' }}>
-              <span style={{ color: '#64748B', marginRight: '6px' }}>病患：</span>
-              {/* ★ 加入病人姓名顯示 */}
-              <span>{patient.patient_id} {patient.name}</span>
-            </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '10px 12px' }}>
-              <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>主訴 / 心理與情緒狀態</span>
-              {/* ★ 3. 改為讀取 sentiment 或 past_medical_history_y */}
-              <span style={{ fontSize: '13px', color: '#1E293B', fontWeight: 'bold' }}>{patient.sentiment || patient.past_medical_history_y || '無紀錄'}</span>
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
+        
+        {/* 主述 */}
+        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px' }}>
+          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>主訴</span>
+          <span style={{ fontSize: '12px', color: '#334155' }}>{patient.sentiment || '無紀錄'}</span>
+        </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>過去病史</span>
-                <span style={{ fontSize: '12px', color: '#334155' }}>{patient.past_medical_history || '無紀錄'}</span>
-              </div>
-              <div style={{ 
-                backgroundColor: hasAllergy ? '#FEF2F2' : '#F8FAFC', 
-                border: `1px solid ${hasAllergy ? '#FCA5A5' : '#E2E8F0'}`, 
-                borderRadius: '8px', 
-                padding: '8px 12px' 
-              }}>
-                <span style={{ fontSize: '11px', color: hasAllergy ? '#EF4444' : '#64748B', display: 'block', fontWeight: 'bold' }}>
-                  藥物過敏
-                </span>
-                <span style={{ fontSize: '12px', color: hasAllergy ? '#991B1B' : '#334155' }}>
-                  {allergyInfo}
-                </span>
-              </div>
-            </div>
-          </div>
-          
+        {/* 過去病史 */}
+        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px' }}>
+          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>過去病史</span>
+          <span style={{ fontSize: '12px', color: '#334155' }}>{patient.past_medical_history || '無紀錄'}</span>
+        </div>
+
+        {/* 藥物過敏 */}
+        <div style={{ 
+          backgroundColor: hasAllergy ? '#FEF2F2' : '#F8FAFC', 
+          border: `1px solid ${hasAllergy ? '#FCA5A5' : '#E2E8F0'}`, 
+          borderRadius: '8px', 
+          padding: '8px 12px' 
+        }}>
+          <span style={{ fontSize: '11px', color: hasAllergy ? '#EF4444' : '#64748B', display: 'block', fontWeight: 'bold' }}>
+            藥物過敏
+          </span>
+          <span style={{ fontSize: '12px', color: hasAllergy ? '#991B1B' : '#334155' }}>
+            {allergyInfo}
+          </span>
+        </div>
+        {/* 禁治療*/}
+        <div style={{ 
+          backgroundColor: patient.do_not_treat ? '#FFF1F2' : '#F8FAFC', 
+          border: `1px solid ${patient.do_not_treat ? '#FECDD3' : '#E2E8F0'}`, 
+          borderRadius: '8px', 
+          padding: '8px 12px' 
+        }}>
+          <span style={{ fontSize: '11px', color: patient.do_not_treat ? '#E11D48' : '#64748B', display: 'block', fontWeight: 'bold' }}>
+            禁治療
+          </span>
+          <span style={{ fontSize: '12px', color: patient.do_not_treat ? '#9F1239' : '#334155', fontWeight: patient.do_not_treat ? 'bold' : 'normal' }}>
+            {patient.do_not_treat || '無紀錄'}
+          </span>
+        </div>
+      </div>
+    </div>         
           <div>
             <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
               生理徵象
