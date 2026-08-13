@@ -282,6 +282,27 @@ export default function RightPanel({ patient }: RightPanelProps) {
                   {patient.spo2 ?? '--'}<span style={{ fontSize: '11px' }}>%</span>
                 </strong>
               </div>
+              {/* ★ 新增：疼痛指數 */}
+              <div style={{ backgroundColor: '#F1F5F9', padding: '10px 8px', borderRadius: '8px', textAlign: 'center' }}>
+                <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>疼痛指數</span>
+                <strong style={{ fontSize: '14px', color: (patient.pain_score ?? 0) >= 7 ? '#EF4444' : '#0F172A' }}>
+                  {patient.pain_score ?? '--'}<span style={{ fontSize: '10px' }}> 分</span>
+                </strong>
+              </div>
+              {/* ★ 新增：GCS 昏迷指數 */}
+              <div style={{ backgroundColor: '#F1F5F9', padding: '10px 8px', borderRadius: '8px', textAlign: 'center' }}>
+                <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>GCS</span>
+                <strong style={{ fontSize: '13px', color: '#0F172A' }}>
+                  {patient.gcs_eye ? `E${patient.gcs_eye}V${patient.gcs_verbal}M${patient.gcs_motor}` : '--'}
+                </strong>
+              </div>
+              {/* ★ 新增：血糖 */}
+              <div style={{ backgroundColor: '#F1F5F9', padding: '10px 8px', borderRadius: '8px', textAlign: 'center' }}>
+                <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>血糖</span>
+                <strong style={{ fontSize: '14px', color: '#0F172A' }}>
+                  {patient.blood_sugar ?? '--'}<span style={{ fontSize: '10px' }}> mg/dL</span>
+                </strong>
+              </div>
             </div>
           </div>
           
