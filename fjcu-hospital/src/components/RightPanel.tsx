@@ -5,8 +5,9 @@ interface SimilarCase {
   treatment_summary: string;
 }
 
-// ★ 介面定義，對應新的 MySQL 關聯資料表欄位
+// 介面定義，對應MySQL關聯資料表欄位
 interface Patient {
+  //患者基本訊息
   patient_id: string;//患者ID
   name?: string;//患者姓名
   triage_id?: string; // 檢傷單號 / 就診序號
@@ -18,18 +19,20 @@ interface Patient {
   do_not_treat?: string; //禁治療資訊
   final_level?: number | string; //檢傷分類
   risk_score: number;
+  //生命徵象
   temperature?: number | string;
   heart_rate?: number | string;
+  spo2?: number | string;
+  respiratory_rate?: number | string;
+  weight?:number | string;
   blood_pressure_sys?: number | string; 
   blood_pressure_dia?: number | string; 
   blood_sugar?: number | string; // 血糖
-  pain_score?: number; // 疼痛指數
   gcs_eye?: number; // GCS Eye
   gcs_verbal?: number; // GCS Verbal
   gcs_motor?: number; // GCS Motor
-  respiratory_rate?: number | string;
-  spo2?: number | string;
   past_medical_history?: string;
+  pain_score?: number; // 疼痛指數
   drug_allergy?: string; 
   allergy?: string;
   xai_factors?: { name: string; impact: number }[];
@@ -151,160 +154,600 @@ export default function RightPanel({ patient }: RightPanelProps) {
       }}
     >
     <div
-  style={{
-    display: 'flex',
-    justify: 'space-between',
-    alignItems: 'center',
-    marginBottom: '16px',
-    borderBottom: '1px solid #F1F5F9',
-    paddingBottom: '12px',
-  }}
->
-  <h3
-    style={{
-      fontSize: '16px',
-      color: '#1E293B',
-      margin: 0,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-    }}
-  >
-    <span style={{ color: '#3B82F6' }}>👤</span>
-    {patient ? (
-      <span>
-        {patient.name || '未提供姓名'}{' '}
-        <span
-          style={{ fontSize: '13px', color: '#64748B', fontWeight: 'normal' }}
-        >
-          ({patient.patient_id})
-        </span>
-      </span>
-    ) : (
-      '請選擇患者'
-    )}
-  </h3>
-
-  {patient && (
-    <div
       style={{
-        fontSize: '12px',
-        color: '#475569',
-        backgroundColor: '#F1F5F9',
-        padding: '4px 8px',
-        borderRadius: '6px',
-        fontWeight: '500',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: '10px',
+        marginBottom: '14px',
+        paddingBottom: '12px',
+        borderBottom: '1px solid #E2E8F0',
       }}
     >
-      就診序號:{' '}
-      <span style={{ color: '#0F172A', fontWeight: 'bold' }}>
-        {patient.triage_id ?? '無序號'}
-      </span>
+      <div>
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '3px',
+          }}
+        >
+          患者 ID
+        </span>
+
+        <strong
+          style={{
+            fontSize: '14px',
+            color: '#1E293B',
+          }}
+        >
+          {patient ? patient.patient_id : '--'}
+        </strong>
+      </div>
+
+      <div>
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '3px',
+          }}
+        >
+          姓名
+        </span>
+
+        <strong
+          style={{
+            fontSize: '14px',
+            color: '#1E293B',
+          }}
+        >
+          {patient ? patient.name || '未提供姓名' : '--'}
+        </strong>
+      </div>
+
+      <div>
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '3px',
+          }}
+        >
+          就診序號
+        </span>
+
+        <strong
+          style={{
+            fontSize: '14px',
+            color: '#1E293B',
+          }}
+        >
+          {patient ? patient.triage_id ?? '無序號' : '--'}
+        </strong>
+      </div>
     </div>
-  )}
-</div>
-
+{/*患者基本資料*/}
       {patient ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px' }}>
-        
-        {/* 主述 */}
-        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px' }}>
-          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>主訴</span>
-          <span style={{ fontSize: '12px', color: '#334155' }}>{patient.sentiment || '無紀錄'}</span>
-        </div>
+        <div
+        style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '14px',
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        paddingRight: '2px'
+        }}
+        >
+        <div
+        style={{
+        backgroundColor: '#F8FAFC',
+        border: '1px solid #E2E8F0',
+        borderRadius: '10px',
+        padding: '12px'
+        }}
+        >
+        <div
+        style={{
+          fontSize: '12px',
+          color: '#334155',
+          fontWeight: 'bold',
+          marginBottom: '10px'
+        }}
+        >
+      患者基本資料
+      </div>
+      <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '8px'
+      }}
+      >
+      {/* 體重 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          borderRadius: '7px',
+          padding: '8px 10px'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '3px'
+          }}
+        >
+          體重
+        </span>
 
-        {/* 過去病史 */}
-        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '8px 12px' }}>
-          <span style={{ fontSize: '11px', color: '#64748B', display: 'block', fontWeight: 'bold' }}>過去病史</span>
-          <span style={{ fontSize: '12px', color: '#334155' }}>{patient.past_medical_history || '無紀錄'}</span>
-        </div>
+        <strong
+          style={{
+            fontSize: '13px',
+            color: '#0F172A'
+          }}
+        >
+          {patient.weight ?? '--'}
+          <span style={{ fontSize: '10px', marginLeft: '2px' }}>
+            kg
+          </span>
+        </strong>
+      </div>
+       {/* 出生日期 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          borderRadius: '7px',
+          padding: '8px 10px'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '3px'
+          }}
+        >
+          出生日期
+        </span>
 
-        {/* 藥物過敏 */}
+        <strong
+          style={{
+            fontSize: '13px',
+            color: '#0F172A'
+          }}
+        >
+          {patient.birth_date || '無紀錄'}
+        </strong>
+      </div>
+       {/* 性別 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          borderRadius: '7px',
+          padding: '8px 10px'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '3px'
+          }}
+        >
+          性別
+        </span>
+
+        <strong
+          style={{
+            fontSize: '13px',
+            color: '#0F172A'
+          }}
+        >
+          {patient.gender || '無紀錄'}
+        </strong>
+      </div>
+      {/* 過去病史 */}
         <div style={{ 
-          backgroundColor: hasAllergy ? '#FEF2F2' : '#F8FAFC', 
+          backgroundColor: 'white', 
+          border: '1px solid #E2E8F0', 
+          borderRadius: '7px', 
+          padding: '8px 10px' 
+          }}
+        >
+          <span 
+          style={{ 
+            fontSize: '11px', 
+            color: '#64748B', 
+            display: 'block', 
+            marginBottom: '3px' 
+            }}
+          >
+            過去病史
+          </span>
+          <strong
+          style={{ 
+            fontSize: '12px',
+            color: '#334155' 
+            }}
+            >
+              {patient.past_medical_history || '無紀錄'}
+            </strong>
+        </div>
+      {/* 藥物過敏 */}
+        <div style={{ 
+          backgroundColor: hasAllergy ? '#FEF2F2' : 'white', 
           border: `1px solid ${hasAllergy ? '#FCA5A5' : '#E2E8F0'}`, 
-          borderRadius: '8px', 
-          padding: '8px 12px' 
+          borderRadius: '7px', 
+          padding: '8px 10px' 
         }}>
-          <span style={{ fontSize: '11px', color: hasAllergy ? '#EF4444' : '#64748B', display: 'block', fontWeight: 'bold' }}>
+          <span 
+          style={{ 
+            fontSize: '11px', 
+            color: hasAllergy ? '#EF4444' : '#64748B', 
+            display: 'block', 
+            marginBottom: '3px',
+            fontWeight: 'bold' 
+            }}
+          >
             藥物過敏
           </span>
-          <span style={{ fontSize: '12px', color: hasAllergy ? '#991B1B' : '#334155' }}>
+          <strong 
+            style={{ 
+            fontSize: '12px', 
+            color: hasAllergy ? '#991B1B' : '#334155' 
+            }}
+          >
             {allergyInfo}
-          </span>
+          </strong>
         </div>
         {/* 禁治療*/}
-        <div style={{ 
-          backgroundColor: patient.do_not_treat ? '#FFF1F2' : '#F8FAFC', 
+        <div 
+          style={{ 
+          backgroundColor: patient.do_not_treat ? '#FFF1F2' : 'white', 
           border: `1px solid ${patient.do_not_treat ? '#FECDD3' : '#E2E8F0'}`, 
-          borderRadius: '8px', 
-          padding: '8px 12px' 
-        }}>
-          <span style={{ fontSize: '11px', color: patient.do_not_treat ? '#E11D48' : '#64748B', display: 'block', fontWeight: 'bold' }}>
+          borderRadius: '7px', 
+          padding: '8px 10px' 
+        }}
+        >
+          <span 
+          style={{ 
+          fontSize: '11px', 
+          color: patient.do_not_treat ? '#E11D48' : '#64748B', 
+          display: 'block', 
+          marginBottom: '3px',
+          fontWeight: 'bold' 
+          }}
+          >
             禁治療
           </span>
-          <span style={{ fontSize: '12px', color: patient.do_not_treat ? '#9F1239' : '#334155', fontWeight: patient.do_not_treat ? 'bold' : 'normal' }}>
+          <span 
+          style={{ 
+            fontSize: '12px', 
+            color: patient.do_not_treat ? '#9F1239' : '#334155', 
+            fontWeight: patient.do_not_treat ? 'bold' : 'normal' 
+            }}
+            >
             {patient.do_not_treat || '無紀錄'}
           </span>
         </div>
+      
       </div>
-    </div>         
-          <div>
-            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>
-              生理徵象
-            </span>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-              <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>體溫</span>
-                <strong style={{ fontSize: '15px', color: '#0F172A' }}>{patient.temperature ?? '--'}<span style={{ fontSize: '11px' }}>°C</span></strong>
-              </div>
-              <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>心跳</span>
-                <strong style={{ fontSize: '15px', color: '#0F172A' }}>{patient.heart_rate ?? '--'}<span style={{ fontSize: '11px' }}>bpm</span></strong>
-              </div>
-              <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>血壓</span>
-                <strong style={{ fontSize: '14px', color: '#0F172A' }}>
-                  {/* ★ 4. 改為讀取 blood_pressure_sys 與 blood_pressure_dia */}
-                  {patient.blood_pressure_sys && patient.blood_pressure_dia ? `${patient.blood_pressure_sys}/${patient.blood_pressure_dia}` : '--'}
-                </strong>
-              </div>
-              <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>呼吸</span>
-                <strong style={{ fontSize: '15px', color: '#0F172A' }}>{patient.respiratory_rate ?? '--'}<span style={{ fontSize: '11px' }}>次</span></strong>
-              </div>
-              <div style={{ backgroundColor: '#F1F5F9', padding: '14px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '4px' }}>血氧</span>
-                <strong style={{ fontSize: '15px', color: Number(patient.spo2) < 95 ? '#EF4444' : '#0F172A' }}>
-                  {patient.spo2 ?? '--'}<span style={{ fontSize: '11px' }}>%</span>
-                </strong>
-              </div>
-              {/* ★ 新增：疼痛指數 */}
-              <div style={{ backgroundColor: '#F1F5F9', padding: '10px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>疼痛指數</span>
-                <strong style={{ fontSize: '14px', color: (patient.pain_score ?? 0) >= 7 ? '#EF4444' : '#0F172A' }}>
-                  {patient.pain_score ?? '--'}<span style={{ fontSize: '10px' }}> 分</span>
-                </strong>
-              </div>
-              {/* ★ 新增：GCS 昏迷指數 */}
-              <div style={{ backgroundColor: '#F1F5F9', padding: '10px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>GCS</span>
-                <strong style={{ fontSize: '13px', color: '#0F172A' }}>
-                  {patient.gcs_eye ? `E${patient.gcs_eye}V${patient.gcs_verbal}M${patient.gcs_motor}` : '--'}
-                </strong>
-              </div>
-              {/* ★ 新增：血糖 */}
-              <div style={{ backgroundColor: '#F1F5F9', padding: '10px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>血糖</span>
-                <strong style={{ fontSize: '14px', color: '#0F172A' }}>
-                  {patient.blood_sugar ?? '--'}<span style={{ fontSize: '10px' }}> mg/dL</span>
-                </strong>
-              </div>
-            </div>
-          </div>
+    </div>  
+{/*主述*/} 
+ <div>
+    <div
+      style={{
+        fontSize: '12px',
+        color: '#64748B',
+        fontWeight: 'bold',
+        marginBottom: '7px'
+      }}
+    >
+      主述
+    </div>
+
+    <div
+      style={{
+        backgroundColor: '#F8FAFC',
+        border: '1px solid #E2E8F0',
+        borderRadius: '8px',
+        padding: '10px 12px',
+        fontSize: '12px',
+        color: '#334155',
+        lineHeight: '1.5'
+      }}
+    >
+      {patient.sentiment || '無紀錄'}
+    </div>
+  </div>
+ {/* 生命徵象*/}
+<div
+    style={{
+      backgroundColor: '#F8FAFC',
+      border: '1px solid #E2E8F0',
+      borderRadius: '10px',
+      padding: '12px'
+    }}
+  >      
+   <div
+      style={{
+        fontSize: '12px',
+        color: '#334155',
+        fontWeight: 'bold',
+        marginBottom: '10px'
+      }}
+    >
+       生命徵象
+    </div>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '8px'
+      }}
+    >
+    {/* 體溫 */}
+    <div style={{
+      backgroundColor: 'white', 
+      border: '1px solid #E2E8F0',
+      padding: '10px 8px', 
+      borderRadius: '7px', 
+      textAlign: 'center' 
+      }}
+      >
+      <span 
+        style={{ 
+        fontSize: '11px', 
+        color: '#64748B', 
+        display: 'block', 
+        marginBottom: '4px' 
+        }}
+        >
+          體溫
+        </span>
+        <strong 
+        style={{ 
+          fontSize: '15px', 
+          color: '#0F172A' 
+          }}
+          >
+            {patient.temperature ?? '--'}
+          <span style={{ fontSize: '10px' }}>°C</span>
+        </strong>
+      </div>
+      {/* 心跳 */}
+      <div 
+      style={{ 
+        backgroundColor: 'white', 
+        border: '1px solid #E2E8F0',
+        padding: '10px 8px', 
+        borderRadius: '7px', 
+        textAlign: 'center' 
+        }}
+        >
+        <span 
+        style={{ 
+          fontSize: '11px', 
+          color: '#64748B', 
+          display: 'block', 
+          marginBottom: '4px' 
+          }}
+          >
+            心跳
+          </span>
+          <strong 
+          style={{ 
+            fontSize: '15px', 
+            color: '#0F172A' 
+            }}
+            >
+              {patient.heart_rate ?? '--'}
+              <span style={{ fontSize: '10px' }}>bpm</span>
+          </strong>
+        </div>
+        {/* 血壓 */}
+        <div
+          style={{
+            backgroundColor: 'white',
+            border: '1px solid #E2E8F0',
+            padding: '10px 8px',
+            borderRadius: '7px',
+            textAlign: 'center'
+          }}
+        >
+          <span
+            style={{
+              fontSize: '11px',
+              color: '#64748B',
+              display: 'block',
+              marginBottom: '4px'
+            }}
+          >
+            血壓
+          </span>
+
+          <strong
+            style={{
+              fontSize: '14px',
+              color: '#0F172A'
+            }}
+          >
+            {patient.blood_pressure_sys && patient.blood_pressure_dia
+              ? `${patient.blood_pressure_sys}/${patient.blood_pressure_dia}`
+              : '--'}
+          </strong>
+        </div>
+        {/* 血氧 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          padding: '10px 8px',
+          borderRadius: '7px',
+          textAlign: 'center'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '4px'
+          }}
+        >
+          血氧
+        </span>
+
+        <strong
+          style={{
+            fontSize: '15px',
+            color: Number(patient.spo2) < 95 ? '#EF4444' : '#0F172A'
+          }}
+        >
+          {patient.spo2 ?? '--'}
+          <span style={{ fontSize: '10px' }}> %</span>
+        </strong>
+      </div>
+      {/* 呼吸 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          padding: '10px 8px',
+          borderRadius: '7px',
+          textAlign: 'center'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '4px'
+          }}
+        >
+          呼吸
+        </span>
+
+        <strong
+          style={{
+            fontSize: '15px',
+            color: '#0F172A'
+          }}
+        >
+          {patient.respiratory_rate ?? '--'}
+          <span style={{ fontSize: '10px' }}> 次</span>
+        </strong>
+      </div>
+              {/* 疼痛指數 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          padding: '10px 8px',
+          borderRadius: '7px',
+          textAlign: 'center'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '4px'
+          }}
+        >
+          疼痛指數
+        </span>
+
+        <strong
+          style={{
+            fontSize: '14px',
+            color: (patient.pain_score ?? 0) >= 7
+              ? '#EF4444'
+              : '#0F172A'
+          }}
+        >
+          {patient.pain_score ?? '--'}
+          <span style={{ fontSize: '10px' }}> 分</span>
+        </strong>
+      </div>
+              {/* GCS */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          padding: '10px 8px',
+          borderRadius: '7px',
+          textAlign: 'center'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '4px'
+          }}
+        >
+          GCS
+        </span>
+
+        <strong
+          style={{
+            fontSize: '13px',
+            color: '#0F172A'
+          }}
+        >
+          {patient.gcs_eye
+            ? `E${patient.gcs_eye}V${patient.gcs_verbal}M${patient.gcs_motor}`
+            : '--'}
+        </strong>
+      </div>
+             {/* 血糖 */}
+      <div
+        style={{
+          backgroundColor: 'white',
+          border: '1px solid #E2E8F0',
+          padding: '10px 8px',
+          borderRadius: '7px',
+          textAlign: 'center'
+        }}
+      >
+        <span
+          style={{
+            fontSize: '11px',
+            color: '#64748B',
+            display: 'block',
+            marginBottom: '4px'
+          }}
+        >
+          血糖
+        </span>
+
+        <strong
+          style={{
+            fontSize: '14px',
+            color: '#0F172A'
+          }}
+        >
+          {patient.blood_sugar ?? '--'}
+          <span style={{ fontSize: '10px' }}> mg/dL</span>
+        </strong>
+      </div>
+      </div>
+    </div>
           
           <div style={{ backgroundColor: patient.risk_score >= 80 ? '#FEF2F2' : patient.risk_score >= 50 ? '#FFFBEB' : '#ECFDF5', border: `1px solid ${patient.risk_score >= 80 ? '#FCA5A5' : patient.risk_score >= 50 ? '#FDE68A' : '#A7F3D0'}`, borderRadius: '8px', padding: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
