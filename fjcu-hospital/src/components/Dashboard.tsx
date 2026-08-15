@@ -45,7 +45,6 @@ export default function Dashboard() {
     setSelectedLevel(null); 
   };
 
-  // 動態從後端撈回的 patients 中篩選出「觀察中」且帶有警示訊息的病患
   const observationAlerts: ObservationAlert[] = patients
     .filter(p => p.status === '觀察中' && p.alert_message)
     .map(p => ({
@@ -64,50 +63,58 @@ export default function Dashboard() {
   const patientsForStats = patients.filter(p => p.status === statusFilter);
 
   return (
-    <div style={{ position: 'relative', height: '100vh', backgroundColor: '#F8FAFC', overflow: 'hidden' }}>
+    <div style={{ position: 'relative', minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
       
       {/* 儀表板主畫面 */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 2fr 1.5fr',
+        /* 動態版面切換：點擊時左欄隱藏，中間縮為 380px，右欄 1fr 自動展寬 */
+        gridTemplateColumns: selectedPatient ? '380px 1fr' : '1fr 2fr 1.5fr',
         gap: '24px',
         padding: '24px',
-        height: '100%',
         boxSizing: 'border-box',
         opacity: isLoading ? 0.5 : 1,
         filter: isLoading ? 'blur(3px)' : 'none',
         pointerEvents: isLoading ? 'none' : 'auto',
-        transition: 'all 0.4s ease-in-out' 
+        transition: 'grid-template-columns 0.3s ease-in-out, opacity 0.4s ease-in-out' 
       }}>
-        {/* 左側欄位組合 (LeftPanel -> Leftmiddle -> Leftcorner) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
-          <LeftPanel 
-            patients={patients} 
-            statusFilter={statusFilter} 
-            setStatusFilter={handleStatusChange} 
-            error={error} 
-            alertCount={observationAlerts.length} 
-          />
-          
-          <Leftmiddle 
-            alerts={observationAlerts} 
-            onSelectPatient={(patientId) => {
-              const found = patients.find(p => p.patient_id === patientId);
-              if (found) setSelectedPatient(found);
-            }} 
-          />
+        
+        {/* 左側欄位組合 - 只有未點選病患時顯示 */}
+        {!selectedPatient && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <LeftPanel 
+              patients={patients} 
+              statusFilter={statusFilter} 
+              setStatusFilter={handleStatusChange} 
+              error={error} 
+              alertCount={observationAlerts.length} 
+            />
+            
+            <Leftmiddle 
+              alerts={observationAlerts} 
+              onSelectPatient={(patientId) => {
+                const found = patients.find(p => p.patient_id === patientId);
+                if (found) setSelectedPatient(found);
+              }} 
+            />
 
-          <Leftcorner 
-            patients={patientsForStats} 
-            selectedLevel={selectedLevel} 
-            onSelectLevel={setSelectedLevel} 
-          />
-        </div>
+            <Leftcorner 
+              patients={patientsForStats} 
+              selectedLevel={selectedLevel} 
+              onSelectLevel={setSelectedLevel} 
+            />
+          </div>
+        )}
 
-        {/* 中間 */}
-        <MiddlePanel patients={filteredPatients} error={error} selectedPatient={selectedPatient} onSelectPatient={setSelectedPatient} />
+        {/* 中間病患清單 */}
+        <MiddlePanel 
+          patients={filteredPatients} 
+          error={error} 
+          selectedPatient={selectedPatient} 
+          onSelectPatient={setSelectedPatient} 
+        />
 
-        {/* 右側 */}
+        {/* 右側 AI 決策輔助 */}
         <RightPanel patient={selectedPatient} />
       </div>
 
