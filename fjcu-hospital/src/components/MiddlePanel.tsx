@@ -4,6 +4,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
   const [sortField, setSortField] = useState<string>('risk_score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // 判斷是否為窄版模式 (是否有選中病患)
   const isNarrow = Boolean(selectedPatient);
 
   const handleSort = (field: string) => {
@@ -41,12 +42,12 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
     return '#10B981'; 
   };
 
-  // 核心修正 1：精準定義 Grid 欄位寬度
-  // 使用 minmax(0, 1fr) 允許欄位縮小，觸發文字的 "..." 省略號，防止超長 MRN 撐爆畫面
-  // 固定檢傷(45px) 與 風險(75px) 的寬度，保護它們不被擠壓
+  // 🌟 動態切換 Grid 比例
+  // 窄版(已選中)：隱藏就診序號，剩下 3 個資料欄位(等寬 1fr) + 24px 取消按鈕
+  // 寬版(未選中)：顯示就診序號，總共 4 個資料欄位(等寬 1fr) + 30px 箭頭按鈕
   const gridLayout = isNarrow
-    ? 'minmax(0, 1.2fr) minmax(0, 1.5fr) 45px 75px 24px'
-    : 'minmax(0, 1.5fr) minmax(0, 2fr) 60px 120px 30px';
+    ? '1fr 1fr 1fr 24px'
+    : '1fr 1fr 1fr 1fr 30px';
 
   return (
     <div style={{ 
@@ -61,7 +62,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
       boxSizing: 'border-box' 
     }}>
       
-      {/* 標題與圖例區塊：修正過度擠壓的問題 */}
+      {/* 標題與圖例區塊 */}
       <div style={{ 
         display: 'flex', 
         flexDirection: 'column', 
@@ -79,7 +80,6 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
           )}
         </div>
 
-        {/* 核心修正 2：為圖例標籤加上 whiteSpace: 'nowrap'，防止文字斷行 */}
         <div style={{ display: 'flex', gap: '6px', fontSize: '11px', flexWrap: 'wrap' }}>
           <span style={{ backgroundColor: '#FEE2E2', color: '#EF4444', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>● 高風險 &gt;80%</span>
           <span style={{ backgroundColor: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>● 中風險 50-79%</span>
@@ -103,9 +103,12 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
           病患 ID {sortField === 'patient_id' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
         </div>
         
-        <div onClick={() => handleSort('triage_id')} style={{ cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          就診序號(PK) {sortField === 'triage_id' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
-        </div>
+        {/* 只有在未點擊 (寬版) 時，才顯示就診序號表頭 */}
+        {!isNarrow && (
+          <div onClick={() => handleSort('triage_id')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            就診序號(PK) {sortField === 'triage_id' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
+          </div>
+        )}
 
         <div onClick={() => handleSort('final_level')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
           檢傷 {sortField === 'final_level' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
@@ -129,7 +132,8 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
             return (
               <div 
                 key={patient.patient_id} 
-                onClick={() => onSelectPatient(patient)}
+                // 🌟 核心功能：如果已經是被選取的狀態 (isSelected)，再次點擊就傳送 null，藉此回到初始寬版畫面！
+                onClick={() => onSelectPatient(isSelected ? null : patient)}
                 style={{ 
                   padding: isNarrow ? '10px 6px' : '14px 16px', 
                   borderBottom: '1px solid #F1F5F9',
@@ -161,28 +165,28 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   </span>
                 </div>
 
-                {/* 2. 就診序號 (PK) - 確保超長文字可以變成 "..." */}
-                <div style={{ overflow: 'hidden', minWidth: 0, display: 'flex', alignItems: 'center' }}>
-                  <span style={{ 
-                    display: 'inline-block',
-                    backgroundColor: '#F1F5F9', 
-                    color: '#475569', 
-                    padding: '2px 6px', 
-                    borderRadius: '4px', 
-                    fontSize: isNarrow ? '10px' : '11px', 
-                    fontFamily: 'monospace',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    border: '1px solid #E2E8F0'
-                  }}>
-                    {patient.triage_id || '未編號'}
-                  </span>
-                </div>
+                {/* 只有在未點擊 (寬版) 時，才顯示就診序號資料 */}
+                {!isNarrow && (
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span style={{ 
+                      display: 'inline-block',
+                      backgroundColor: '#F1F5F9', 
+                      color: '#475569', 
+                      padding: '2px 6px', 
+                      borderRadius: '4px', 
+                      fontSize: '11px', 
+                      fontFamily: 'monospace',
+                      whiteSpace: 'nowrap',
+                      width: 'fit-content', 
+                      boxSizing: 'border-box',
+                      border: '1px solid #E2E8F0'
+                    }}>
+                      {patient.triage_id || '未編號'}
+                    </span>
+                  </div>
+                )}
 
-                {/* 3. 檢傷級數 - 強制不換行 (nowrap) 並且居中對齊 */}
+                {/* 檢傷級數 (寬版時為第3欄，窄版時為第2欄) */}
                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                   <span style={{ 
                     display: 'inline-flex',
@@ -201,7 +205,7 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   </span>
                 </div>
 
-                {/* 4. 惡化風險與進度條 */}
+                {/* 惡化風險與進度條 (寬版時為第4欄，窄版時為第3欄) */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflow: 'hidden', minWidth: 0 }}>
                   <strong style={{ color: riskColor, minWidth: '32px', fontSize: isNarrow ? '12px' : '14px' }}>
                     {patient.risk_score || 0}%
@@ -211,10 +215,11 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   </div>
                 </div>
 
-                {/* 5. 取消/選取按鈕 */}
+                {/* 取消/選取按鈕 (最後一欄空間) */}
                 <div style={{ textAlign: 'right', color: '#94A3B8', fontSize: '14px', display: 'flex', justifyContent: 'flex-end' }}>
                   {isSelected ? (
                     <span 
+                      // 按叉叉也可以取消選取
                       onClick={(e) => { e.stopPropagation(); onSelectPatient(null); }}
                       style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#E2E8F0', color: '#475569', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
                       title="取消選取"

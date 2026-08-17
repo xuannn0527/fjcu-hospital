@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import LeftPanel from './LeftPanel';
 import Leftmiddle, { type ObservationAlert } from './Leftmiddle';
-import Leftcorner from './Leftcorner'; 
+import Leftcorner from './Leftcorner';
 import MiddlePanel from './MiddlePanel';
 import RightPanel from './RightPanel';
 
 export default function Dashboard() {
-  const [patients, setPatients] = useState<any[]>([]); 
+  const [patients, setPatients] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<any | null>(null);
-  
+
   const [statusFilter, setStatusFilter] = useState<string>('未處理');
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
 
@@ -23,7 +23,7 @@ export default function Dashboard() {
         if (Array.isArray(data)) {
           const normalizedData = data.map(p => ({
             ...p,
-            status: p.status || '未處理' 
+            status: p.status || '未處理'
           }));
           setPatients(normalizedData);
           setError(null);
@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   const handleStatusChange = (newStatus: string) => {
     setStatusFilter(newStatus);
-    setSelectedLevel(null); 
+    setSelectedLevel(null);
   };
 
   const observationAlerts: ObservationAlert[] = patients
@@ -64,71 +64,97 @@ export default function Dashboard() {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
-      
+
       {/* 儀表板主畫面 */}
       <div style={{
-        display: 'grid',
-        /* 動態版面切換：點擊時左欄隱藏，中間縮為 380px，右欄 1fr 自動展寬 */
-        gridTemplateColumns: selectedPatient ? '380px 1fr' : '1fr 2fr 1.5fr',
-        gap: '24px',
+        display: 'flex', 
         padding: '24px',
         boxSizing: 'border-box',
         opacity: isLoading ? 0.5 : 1,
         filter: isLoading ? 'blur(3px)' : 'none',
         pointerEvents: isLoading ? 'none' : 'auto',
-        transition: 'grid-template-columns 0.3s ease-in-out, opacity 0.4s ease-in-out' 
+        transition: 'opacity 0.4s ease-in-out',
+        height: '100vh', 
+        overflow: 'hidden'
       }}>
-        
-        {/* 左側欄位組合 - 只有未點選病患時顯示 */}
-        {!selectedPatient && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <LeftPanel 
-              patients={patients} 
-              statusFilter={statusFilter} 
-              setStatusFilter={handleStatusChange} 
-              error={error} 
-              alertCount={observationAlerts.length} 
+
+        {/* ==================== 左側欄位組合 ==================== */}
+        <div style={{
+          width: selectedPatient ? '0px' : '320px',
+          marginRight: selectedPatient ? '0px' : '24px',
+          opacity: selectedPatient ? 0 : 1,
+          overflow: 'hidden',
+          flexShrink: 0,
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          {/* 內層固定 320px 寬度 */}
+          <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <LeftPanel
+              patients={patients}
+              statusFilter={statusFilter}
+              setStatusFilter={handleStatusChange}
+              error={error}
+              alertCount={observationAlerts.length}
             />
-            
-            <Leftmiddle 
-              alerts={observationAlerts} 
+            <Leftmiddle
+              alerts={observationAlerts}
               onSelectPatient={(patientId) => {
                 const found = patients.find(p => p.patient_id === patientId);
                 if (found) setSelectedPatient(found);
-              }} 
+              }}
             />
-
-            <Leftcorner 
-              patients={patientsForStats} 
-              selectedLevel={selectedLevel} 
-              onSelectLevel={setSelectedLevel} 
+            <Leftcorner
+              patients={patientsForStats}
+              selectedLevel={selectedLevel}
+              onSelectLevel={setSelectedLevel}
             />
           </div>
-        )}
+        </div>
 
-        {/* 中間病患清單 */}
-        <MiddlePanel 
-          patients={filteredPatients} 
-          error={error} 
-          selectedPatient={selectedPatient} 
-          onSelectPatient={setSelectedPatient} 
-        />
+        {/* ==================== 中間病患清單 ==================== */}
+        <div style={{
+          flex: selectedPatient ? '0 0 350px' : '1 1 0%',
+          marginRight: selectedPatient ? '24px' : '0px',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <MiddlePanel
+            patients={filteredPatients}
+            error={error}
+            selectedPatient={selectedPatient}
+            onSelectPatient={setSelectedPatient}
+          />
+        </div>
 
-        {/* 右側 AI 決策輔助 */}
-        <RightPanel patient={selectedPatient} />
+        {/* ==================== 右側 AI 決策 ==================== */}
+        <div style={{
+          flex: selectedPatient ? '1 1 0%' : '0 0 0px',
+          opacity: selectedPatient ? 1 : 0,
+          overflow: 'hidden',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          minWidth: 0
+        }}>
+          {/* 內層設定 minWidth */}
+          <div style={{ minWidth: '500px', height: '100%' }}>
+            {selectedPatient && <RightPanel patient={selectedPatient} />}
+          </div>
+        </div>
+
       </div>
 
-      {/* 載入中遮罩與動畫 */}
+      {/* ==================== 載入中遮罩與動畫 ==================== */}
       {isLoading && (
         <div style={{
           position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0, 
+          top: 0, left: 0, right: 0, bottom: 0,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          backgroundColor: 'rgba(248, 250, 252, 0.4)', 
-          zIndex: 50, 
+          backgroundColor: 'rgba(248, 250, 252, 0.4)',
+          zIndex: 50,
           gap: '24px'
         }}>
           <div style={{
@@ -173,7 +199,7 @@ export default function Dashboard() {
           </style>
         </div>
       )}
-      
+
     </div>
   );
 }
