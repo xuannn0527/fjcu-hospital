@@ -62,7 +62,7 @@ export default function Header() {
           🕒 {formattedTime}
         </div>
         <div style={{ padding: '8px 16px', backgroundColor: '#ECFDF5', color: '#047857', borderRadius: '8px', fontSize: '14px', fontWeight: '500' }}>
-          🟢 即時監測中
+          即時監測中
         </div>
         <div style={{ fontSize: '15px', color: '#334155' }}>
           值班：<strong style={{ color: '#0F172A' }}>資深醫師</strong>
