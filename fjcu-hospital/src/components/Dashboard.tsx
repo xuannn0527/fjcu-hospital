@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Activity } from 'lucide-react';
 import LeftPanel from './LeftPanel';
-import Leftmiddle, { type ObservationAlert } from './Leftmiddle';
+import Leftmiddle from './Leftmiddle';
 import Leftcorner from './Leftcorner';
 import MiddlePanel from './MiddlePanel';
 import RightPanel from './RightPanel';
@@ -45,14 +45,8 @@ export default function Dashboard() {
     setSelectedLevel(null);
   };
 
-  const observationAlerts: ObservationAlert[] = patients
-    .filter(p => p.status === '觀察中' && p.alert_message)
-    .map(p => ({
-      id: p.patient_id,
-      patientId: p.patient_id,
-      medicalNumber: p.medical_number || '無病歷號',
-      alertMessage: p.alert_message
-    }));
+  // 保留給 LeftPanel 顯示紅色 badge 數字用的
+  const observationAlerts = patients.filter(p => p.status === '觀察中' && p.alert_message);
 
   const filteredPatients = patients.filter(p => {
     const matchStatus = p.status === statusFilter;
@@ -96,8 +90,9 @@ export default function Dashboard() {
               error={error}
               alertCount={observationAlerts.length}
             />
+            {/* ★ 這裡修正了！改為傳入 patients={patients} */}
             <Leftmiddle
-              alerts={observationAlerts}
+              patients={patients}
               onSelectPatient={(patientId) => {
                 const found = patients.find(p => p.patient_id === patientId);
                 if (found) setSelectedPatient(found);

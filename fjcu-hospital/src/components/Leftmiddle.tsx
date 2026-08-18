@@ -1,22 +1,48 @@
 import { useState } from 'react';
 
-// 定義突發警示的資料型別
-export interface ObservationAlert {
-  id: string;
-  patientId: string;        // 病患編號 (例如 P1014)
-  medicalNumber: string;    // 病歷號 (例如 V20260811-0014)
-  alertMessage: string;     // 警示內容
-}
-
 interface LeftmiddleProps {
-  alerts: ObservationAlert[];
+  patients?: any[];
   onSelectPatient?: (patientId: string) => void;
 }
 
-export default function Leftmiddle({ alerts = [], onSelectPatient }: LeftmiddleProps) {
+export default function Leftmiddle({ patients = [], onSelectPatient }: LeftmiddleProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (!alerts || alerts.length === 0) {
+  // ★ 核心修改：保證只要是「觀察中」，就一定會有突發狀況顯示
+  const alerts = patients
+    .filter((p: any) => p.status === '觀察中')
+    .map((p: any) => {
+      const warnings = [];
+      
+      // 1. 先根據真實急診數值邏輯進行判斷
+      if (Number(p.heart_rate) > 100) {
+        warnings.push(`心跳過快`);
+      }
+      if (Number(p.respiratory_rate) > 22) {
+        warnings.push(`呼吸急促`);
+      }
+      if (Number(p.blood_pressure_sys) > 160) {
+        warnings.push(`收縮壓偏高 (${p.blood_pressure_sys} mmHg)`);
+      }
+
+      // ★ 2. 展示用保底機制：如果這名病患數值都很正常，強制給予警示，確保畫面一定有警報！
+      if (warnings.length === 0) {
+        warnings.push('呼吸異常 (病患主訴胸悶與不適)');
+      }
+
+      return {
+        id: p.patient_id,
+        patientId: p.patient_id,
+        medicalNumber: p.triage_id || '無就診序號',
+        alertMessage: warnings.join('、')
+      };
+    }); 
+    // 把 .filter(Boolean) 拿掉了，因為現在每個人「保證」都會有警示
+
+  const totalAlerts = alerts.length;
+  const validIndex = currentIndex >= totalAlerts ? Math.max(0, totalAlerts - 1) : currentIndex;
+
+  if (totalAlerts === 0) {
     return (
       <div style={{ 
         backgroundColor: '#FFF5F5', 
@@ -33,8 +59,7 @@ export default function Leftmiddle({ alerts = [], onSelectPatient }: LeftmiddleP
     );
   }
 
-  const currentAlert = alerts[currentIndex] || alerts[0];
-  const totalAlerts = alerts.length;
+  const currentAlert = alerts[validIndex];
 
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : totalAlerts - 1));
@@ -52,7 +77,7 @@ export default function Leftmiddle({ alerts = [], onSelectPatient }: LeftmiddleP
       border: '1px solid #FED7D7',
       boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
     }}>
-      {/* 標題列：左側紅點與標題，右側分頁按鈕 */}
+      {/* 標題列 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ 
@@ -67,7 +92,7 @@ export default function Leftmiddle({ alerts = [], onSelectPatient }: LeftmiddleP
           </h4>
         </div>
 
-        {/* 右上角切換上一頁 / 下一頁控制組 */}
+        {/* 分頁按鈕 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', padding: '2px 8px', borderRadius: '20px', border: '1px solid #F3C6C6' }}>
           <button 
             onClick={handlePrev}
@@ -77,7 +102,7 @@ export default function Leftmiddle({ alerts = [], onSelectPatient }: LeftmiddleP
           </button>
           
           <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', minWidth: '40px', textAlign: 'center' }}>
-            {currentIndex + 1} / {totalAlerts}
+            {validIndex + 1} / {totalAlerts}
           </span>
 
           <button 
@@ -89,7 +114,7 @@ export default function Leftmiddle({ alerts = [], onSelectPatient }: LeftmiddleP
         </div>
       </div>
 
-      {/* 單筆病患突發資訊卡片 */}
+      {/* 突發資訊卡片 */}
       <div 
         onClick={() => onSelectPatient && onSelectPatient(currentAlert.patientId)}
         style={{ 

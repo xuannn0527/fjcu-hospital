@@ -11,6 +11,7 @@ export interface SimilarCase {
 export interface Patient {
   patient_id: string;
   name?: string;
+  status?: string;
   triage_id?: string;
   medical_number?: string;
   gender?: string;
@@ -94,6 +95,8 @@ export default function RightPanel({ patient }: RightPanelProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualNote, setManualNote] = useState('');
+  // ★ 1. 新增：用來控制按鈕載入狀態
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setSelectedItems([]);
@@ -101,21 +104,70 @@ export default function RightPanel({ patient }: RightPanelProps) {
     setManualNote('');
   }, [patient?.patient_id]);
 
-  const handleSubmit = () => {
-    if (!patient) return;
-    const treatments = [
-      ...selectedItems,
-      ...(manualNote.trim() ? [`[手動輸入] ${manualNote.trim()}`] : []),
-    ];
-    if (!treatments.length) {
-      alert('請先勾選 AI 處置建議或透過「手動輸入」補充處置內容！');
+ // ★ 改寫 handleSubmit，加入轉回待處理的邏輯
+  const handleSubmit = async () => {
+    if (!patient || !patient.triage_id) {
+      alert('無法取得病患檢傷編號！');
       return;
     }
-    alert(
-      `病患 ${patient.patient_id} 已成功轉入觀察！\n\n【採納的處置內容】：\n${treatments
-        .map((item, index) => `${index + 1}. ${item}`)
-        .join('\n')}`
-    );
+
+    const isObserving = patient.status === '觀察中';
+    let targetStatus = '觀察中';
+    let alertMessageStr = '';
+
+    if (isObserving) {
+      // 情境 A：如果是觀察中 -> 轉回待處理
+      targetStatus = '未處理';
+      alertMessageStr = ''; // 清空原本的處置紀錄
+    } else {
+      // 情境 B：如果是未處理 -> 轉入觀察
+      const treatments = [
+        ...selectedItems,
+        ...(manualNote.trim() ? [`[手動輸入] ${manualNote.trim()}`] : []),
+      ];
+
+      if (!treatments.length) {
+        alert('請先勾選 AI 處置建議或透過「手動輸入」補充處置內容！');
+        return;
+      }
+      alertMessageStr = treatments.map((item, index) => `${index + 1}. ${item}`).join('\n');
+    }
+
+    try {
+      setIsSubmitting(true);
+      
+      const response = await fetch(`http://localhost:8000/api/triage/${patient.triage_id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: targetStatus,
+          alert_message: alertMessageStr
+        })
+      });
+
+      if (response.ok) {
+        if (isObserving) {
+          alert(`病患 ${patient.patient_id} 已轉回待處理！`);
+        } else {
+          alert(`病患 ${patient.patient_id} 已成功轉入觀察！\n\n【採納的處置內容】：\n${alertMessageStr}`);
+        }
+        
+        setSelectedItems([]);
+        setManualNote('');
+        setShowManualInput(false);
+        window.location.reload(); // 自動重新整理畫面
+      } else {
+        const errorData = await response.json();
+        alert(`更新狀態失敗: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      alert('連線至伺服器失敗，請檢查後端是否啟動。');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const header = [
@@ -150,35 +202,16 @@ export default function RightPanel({ patient }: RightPanelProps) {
       >
         {header.map(([label, value]) => (
           <div key={label}>
-            <span
-              style={{
-                fontSize: '11px',
-                color: '#64748B',
-                display: 'block',
-                marginBottom: '3px',
-              }}
-            >
+            <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '3px' }}>
               {label}
             </span>
-            <strong style={{ fontSize: '14px', color: '#1E293B' }}>
-              {value}
-            </strong>
+            <strong style={{ fontSize: '14px', color: '#1E293B' }}>{value}</strong>
           </div>
         ))}
       </div>
 
       {patient ? (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '14px',
-            flex: 1,
-            minHeight: 0,
-            overflowY: 'auto',
-            paddingRight: '2px',
-          }}
-        >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: '2px' }}>
           <RightBasicInfo patient={patient} />
           <RightAnalysis
             patient={patient}
@@ -190,11 +223,11 @@ export default function RightPanel({ patient }: RightPanelProps) {
             selectedItems={selectedItems}
             showManualInput={showManualInput}
             manualNote={manualNote}
+            isSubmitting={isSubmitting}
+            currentStatus={patient.status || '未處理'} // ★ 傳入當前狀態給按鈕判斷
             onCheckboxChange={(item) =>
               setSelectedItems((items) =>
-                items.includes(item)
-                  ? items.filter((value) => value !== item)
-                  : [...items, item]
+                items.includes(item) ? items.filter((value) => value !== item) : [...items, item]
               )
             }
             onToggleManualInput={() => setShowManualInput((value) => !value)}
@@ -203,42 +236,11 @@ export default function RightPanel({ patient }: RightPanelProps) {
           />
         </div>
       ) : (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            color: '#94A3B8',
-            textAlign: 'center',
-            padding: '20px',
-          }}
-        >
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: '#F8FAFC',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px',
-              marginBottom: '12px',
-              border: '1px dashed #CBD5E1',
-            }}
-          >
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#94A3B8', textAlign: 'center', padding: '20px' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '12px', border: '1px dashed #CBD5E1' }}>
             👈
           </div>
-          <p
-            style={{
-              fontSize: '14px',
-              margin: '0 0 4px 0',
-              fontWeight: 'bold',
-              color: '#64748B',
-            }}
-          >
+          <p style={{ fontSize: '14px', margin: '0 0 4px 0', fontWeight: 'bold', color: '#64748B' }}>
             請選擇病患
           </p>
           <span style={{ fontSize: '12px' }}>
