@@ -86,7 +86,7 @@ export default function Dashboard() {
             height: '100%', 
             display: 'flex', 
             flexDirection: 'column', 
-            gap: '18px',  // ★ 這裡已經改成 16px，讓這三個元件維持等距
+            justifyContent: 'space-between',
             boxSizing: 'border-box'
           }}>
             <LeftPanel
