@@ -43,8 +43,8 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
   };
 
   // 🌟 動態切換 Grid 比例
-  // 窄版(已選中)：隱藏就診序號，剩下 3 個資料欄位(等寬 1fr) + 24px 取消按鈕
-  // 寬版(未選中)：顯示就診序號，總共 4 個資料欄位(等寬 1fr) + 30px 箭頭按鈕
+  // 窄版(已選中)：隱藏就診序號，剩下 3 個資料欄位(等寬 1fr) + 24px 箭頭按鈕空間
+  // 寬版(未選中)：顯示就診序號，總共 4 個資料欄位(等寬 1fr) + 30px 箭頭按鈕空間
   const gridLayout = isNarrow
     ? '1fr 1fr 1fr 24px'
     : '1fr 1fr 1fr 1fr 30px';
@@ -73,13 +73,10 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <h3 style={{ fontSize: isNarrow ? '15px' : '16px', color: '#1E293B', margin: '0', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ color: '#EF4444' }}>🚨</span> 病患風險排序清單
+            <span>病患風險排序清單</span> 
           </h3>
-          {!isNarrow && (
-            <span style={{ fontSize: '12px', color: '#64748B' }}>即時分析生命徵象與3小時內惡化預測風險</span>
-          )}
         </div>
-
+        
         <div style={{ display: 'flex', gap: '6px', fontSize: '11px', flexWrap: 'wrap' }}>
           <span style={{ backgroundColor: '#FEE2E2', color: '#EF4444', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>● 高風險 &gt;80%</span>
           <span style={{ backgroundColor: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '12px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>● 中風險 50-79%</span>
@@ -215,16 +212,9 @@ export default function MiddlePanel({ patients, error, selectedPatient, onSelect
                   </div>
                 </div>
 
-                {/* 取消/選取按鈕 (最後一欄空間) */}
+                {/* 取消/選取按鈕 (最後一欄空間，現在永遠只顯示箭頭) */}
                 <div style={{ textAlign: 'right', color: '#94A3B8', fontSize: '14px', display: 'flex', justifyContent: 'flex-end' }}>
-                  {isSelected ? (
-                    <span 
-                      // 按叉叉也可以取消選取
-                      onClick={(e) => { e.stopPropagation(); onSelectPatient(null); }}
-                      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#E2E8F0', color: '#475569', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
-                      title="取消選取"
-                    >✕</span>
-                  ) : <span>&gt;</span>}
+                  <span>&gt;</span>
                 </div>
               </div>
             );

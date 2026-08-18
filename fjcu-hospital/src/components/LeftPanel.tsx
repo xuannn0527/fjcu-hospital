@@ -13,27 +13,27 @@ export default function LeftPanel({ patients = [], statusFilter, setStatusFilter
   const observingCount = patients.filter(p => p.status === '觀察中').length;
 
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-      <h3 style={{ fontSize: '14px', color: '#64748B', marginBottom: '8px', fontWeight: 'normal' }}>當前候診與觀察</h3>
+    <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '14px 16px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+      <h3 style={{ fontSize: '13px', color: '#64748B', marginBottom: '4px', fontWeight: 'normal' }}>當前候診與觀察</h3>
       
       {error ? (
-        <p style={{ color: 'red' }}>連線問題: {error}</p>
+        <p style={{ color: 'red', fontSize: '12px' }}>連線問題: {error}</p>
       ) : (
         <>
           {/* 總人數顯示 */}
-          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1E293B', marginBottom: '16px' }}>
-            {patients.length} <span style={{ fontSize: '16px', fontWeight: 'normal', color: '#64748B' }}>人</span>
+          <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#1E293B', marginBottom: '10px' }}>
+            {patients.length} <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#64748B' }}>人</span>
           </div>
 
           {/* 未處理 / 觀察中 兩個卡片按鈕 */}
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
             {/* 未處理卡片 */}
             <div 
               onClick={() => setStatusFilter('未處理')}
               style={{ 
                 flex: 1, 
-                padding: '12px', 
-                borderRadius: '12px', 
+                padding: '10px', 
+                borderRadius: '10px', 
                 backgroundColor: statusFilter === '未處理' ? '#FFF5F5' : '#FFFFFF', 
                 border: statusFilter === '未處理' ? '2px solid #EF4444' : '1px solid #E2E8F0',
                 cursor: 'pointer',
@@ -41,18 +41,18 @@ export default function LeftPanel({ patients = [], statusFilter, setStatusFilter
                 transition: 'all 0.2s'
               }}
             >
-              <div style={{ fontSize: '12px', color: '#EF4444', fontWeight: 'bold', marginBottom: '4px' }}>未處理</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#EF4444' }}>{unhandledCount}</div>
+              <div style={{ fontSize: '11px', color: '#EF4444', fontWeight: 'bold', marginBottom: '2px' }}>未處理</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#EF4444' }}>{unhandledCount}</div>
             </div>
 
             {/* 觀察中卡片 (帶有右上角鈴鐺警示紅點) */}
             <div 
               onClick={() => setStatusFilter('觀察中')}
               style={{ 
-                position: 'relative', // 讓內部絕對定位的鈴鐺徽章對齊
+                position: 'relative', 
                 flex: 1, 
-                padding: '12px', 
-                borderRadius: '12px', 
+                padding: '10px', 
+                borderRadius: '10px', 
                 backgroundColor: statusFilter === '觀察中' ? '#EFF6FF' : '#FFFFFF', 
                 border: statusFilter === '觀察中' ? '2px solid #3B82F6' : '1px solid #E2E8F0',
                 cursor: 'pointer',
@@ -68,9 +68,9 @@ export default function LeftPanel({ patients = [], statusFilter, setStatusFilter
                   right: '-6px',
                   backgroundColor: '#FF4D4F',
                   color: 'white',
-                  fontSize: '11px',
+                  fontSize: '10px',
                   fontWeight: 'bold',
-                  padding: '2px 6px',
+                  padding: '1px 5px',
                   borderRadius: '10px',
                   boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
                   border: '2px solid #FFFFFF'
@@ -79,8 +79,8 @@ export default function LeftPanel({ patients = [], statusFilter, setStatusFilter
                 </div>
               )}
 
-              <div style={{ fontSize: '12px', color: '#3B82F6', fontWeight: 'bold', marginBottom: '4px' }}>觀察中</div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#3B82F6' }}>{observingCount}</div>
+              <div style={{ fontSize: '11px', color: '#3B82F6', fontWeight: 'bold', marginBottom: '2px' }}>觀察中</div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#3B82F6' }}>{observingCount}</div>
             </div>
           </div>
         </>

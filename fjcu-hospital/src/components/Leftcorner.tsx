@@ -25,7 +25,7 @@ export default function Leftcorner({ patients = [], selectedLevel, onSelectLevel
   };
 
   return (
-    <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', marginTop: '20px' }}>
+    <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
       {/* 標題與清除篩選按鈕區塊 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <h3 style={{ fontSize: '16px', margin: 0 }}>檢傷分級統計</h3>

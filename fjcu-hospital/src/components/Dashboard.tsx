@@ -45,7 +45,6 @@ export default function Dashboard() {
     setSelectedLevel(null);
   };
 
-  // 保留給 LeftPanel 顯示紅色 badge 數字用的
   const observationAlerts = patients.filter(p => p.status === '觀察中' && p.alert_message);
 
   const filteredPatients = patients.filter(p => {
@@ -57,7 +56,7 @@ export default function Dashboard() {
   const patientsForStats = patients.filter(p => p.status === statusFilter);
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', backgroundColor: '#F8FAFC' }}>
+    <div style={{ position: 'relative', height: '100vh', overflow: 'hidden', backgroundColor: '#F8FAFC' }}>
 
       {/* 儀表板主畫面 */}
       <div style={{
@@ -68,7 +67,7 @@ export default function Dashboard() {
         filter: isLoading ? 'blur(3px)' : 'none',
         pointerEvents: isLoading ? 'none' : 'auto',
         transition: 'opacity 0.4s ease-in-out',
-        height: '100vh', 
+        height: '100%', 
         overflow: 'hidden'
       }}>
 
@@ -79,10 +78,17 @@ export default function Dashboard() {
           opacity: selectedPatient ? 0 : 1,
           overflow: 'hidden',
           flexShrink: 0,
-          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          height: '100%'
         }}>
-          {/* 內層固定 320px 寬度 */}
-          <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ 
+            width: '320px', 
+            height: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '18px',  // ★ 這裡已經改成 16px，讓這三個元件維持等距
+            boxSizing: 'border-box'
+          }}>
             <LeftPanel
               patients={patients}
               statusFilter={statusFilter}
@@ -90,7 +96,6 @@ export default function Dashboard() {
               error={error}
               alertCount={observationAlerts.length}
             />
-            {/* ★ 這裡修正了！改為傳入 patients={patients} */}
             <Leftmiddle
               patients={patients}
               onSelectPatient={(patientId) => {
@@ -129,17 +134,22 @@ export default function Dashboard() {
           opacity: selectedPatient ? 1 : 0,
           overflow: 'hidden',
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          minWidth: 0
+          minWidth: 0,
+          height: '100%'
         }}>
-          {/* 內層設定 minWidth */}
           <div style={{ minWidth: '500px', height: '100%' }}>
-            {selectedPatient && <RightPanel patient={selectedPatient} />}
+            {selectedPatient && (
+              <RightPanel 
+                patient={selectedPatient} 
+                onClose={() => setSelectedPatient(null)} 
+              />
+            )}
           </div>
         </div>
 
       </div>
 
-      {/* ==================== 載入中遮罩與動畫 ==================== */}
+      {/* 載入中遮罩 */}
       {isLoading && (
         <div style={{
           position: 'absolute',

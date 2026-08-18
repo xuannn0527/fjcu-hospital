@@ -42,6 +42,7 @@ export interface Patient {
 
 interface RightPanelProps {
   patient: Patient | null;
+  onClose?: () => void; // ★ 新增關閉面板回呼
 }
 
 const getRiskColor = (score: number) =>
@@ -91,11 +92,10 @@ const getAiRecommendations = (patient: Patient) =>
         '於 60 分鐘後追蹤基礎生命徵象',
       ];
 
-export default function RightPanel({ patient }: RightPanelProps) {
+export default function RightPanel({ patient, onClose }: RightPanelProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualNote, setManualNote] = useState('');
-  // ★ 1. 新增：用來控制按鈕載入狀態
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -104,7 +104,6 @@ export default function RightPanel({ patient }: RightPanelProps) {
     setManualNote('');
   }, [patient?.patient_id]);
 
- // ★ 改寫 handleSubmit，加入轉回待處理的邏輯
   const handleSubmit = async () => {
     if (!patient || !patient.triage_id) {
       alert('無法取得病患檢傷編號！');
@@ -116,11 +115,9 @@ export default function RightPanel({ patient }: RightPanelProps) {
     let alertMessageStr = '';
 
     if (isObserving) {
-      // 情境 A：如果是觀察中 -> 轉回待處理
       targetStatus = '未處理';
-      alertMessageStr = ''; // 清空原本的處置紀錄
+      alertMessageStr = '';
     } else {
-      // 情境 B：如果是未處理 -> 轉入觀察
       const treatments = [
         ...selectedItems,
         ...(manualNote.trim() ? [`[手動輸入] ${manualNote.trim()}`] : []),
@@ -157,7 +154,7 @@ export default function RightPanel({ patient }: RightPanelProps) {
         setSelectedItems([]);
         setManualNote('');
         setShowManualInput(false);
-        window.location.reload(); // 自動重新整理畫面
+        window.location.reload();
       } else {
         const errorData = await response.json();
         alert(`更新狀態失敗: ${errorData.error}`);
@@ -186,32 +183,81 @@ export default function RightPanel({ patient }: RightPanelProps) {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        maxHeight: '100%',
         minHeight: 0,
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
     >
+      {/* 頂部 Header：改為 4 欄，最右側放入關閉叉叉按鈕 */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
+          gridTemplateColumns: '1fr 1fr 1fr auto',
           gap: '10px',
           marginBottom: '14px',
           paddingBottom: '12px',
           borderBottom: '1px solid #E2E8F0',
+          alignItems: 'center',
+          flexShrink: 0,
         }}
       >
         {header.map(([label, value]) => (
           <div key={label}>
-            <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginBottom: '3px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                color: '#64748B',
+                display: 'block',
+                marginBottom: '3px',
+              }}
+            >
               {label}
             </span>
-            <strong style={{ fontSize: '14px', color: '#1E293B' }}>{value}</strong>
+            <strong style={{ fontSize: '14px', color: '#1E293B' }}>
+              {value}
+            </strong>
           </div>
         ))}
+
+        {/* 移到此處的關閉叉叉按鈕 */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={onClose}
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              backgroundColor: '#F1F5F9',
+              border: 'none',
+              color: '#64748B',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            title="關閉面板"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {patient ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: '2px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            paddingRight: '4px',
+          }}
+        >
           <RightBasicInfo patient={patient} />
           <RightAnalysis
             patient={patient}
@@ -224,10 +270,12 @@ export default function RightPanel({ patient }: RightPanelProps) {
             showManualInput={showManualInput}
             manualNote={manualNote}
             isSubmitting={isSubmitting}
-            currentStatus={patient.status || '未處理'} // ★ 傳入當前狀態給按鈕判斷
+            currentStatus={patient.status || '未處理'}
             onCheckboxChange={(item) =>
               setSelectedItems((items) =>
-                items.includes(item) ? items.filter((value) => value !== item) : [...items, item]
+                items.includes(item)
+                  ? items.filter((value) => value !== item)
+                  : [...items, item]
               )
             }
             onToggleManualInput={() => setShowManualInput((value) => !value)}
@@ -236,11 +284,42 @@ export default function RightPanel({ patient }: RightPanelProps) {
           />
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#94A3B8', textAlign: 'center', padding: '20px' }}>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '12px', border: '1px dashed #CBD5E1' }}>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            color: '#94A3B8',
+            textAlign: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              backgroundColor: '#F8FAFC',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              marginBottom: '12px',
+              border: '1px dashed #CBD5E1',
+            }}
+          >
             👈
           </div>
-          <p style={{ fontSize: '14px', margin: '0 0 4px 0', fontWeight: 'bold', color: '#64748B' }}>
+          <p
+            style={{
+              fontSize: '14px',
+              margin: '0 0 4px 0',
+              fontWeight: 'bold',
+              color: '#64748B',
+            }}
+          >
             請選擇病患
           </p>
           <span style={{ fontSize: '12px' }}>
