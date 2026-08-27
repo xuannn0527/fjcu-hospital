@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-// 新增 ChevronLeft, ChevronRight 作為收合按鈕的圖示
-import { Stethoscope, History, PieChart, User, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+// ★ 1. 新增引入 Home 圖示
+import { Home, Stethoscope, History, PieChart, User, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SidebarProps {
   onLogout: () => void;
@@ -13,8 +13,10 @@ export default function Sidebar({ onLogout }: SidebarProps) {
   // 控制側邊欄是否收合的狀態
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // ★ 2. 在選單陣列最上方加入「主頁」 (路徑設為 '/')
   const menuItems = [
-    { path: '/triage', icon: <Stethoscope size={24} />, label: '首頁' },
+    { path: '/', icon: <Home size={24} />, label: '首頁' },
+    { path: '/triage', icon: <Stethoscope size={24} />, label: '管理' },
     { path: '/records', icon: <History size={24} />, label: '病歷' },
     { path: '/personnel', icon: <User size={24} />, label: '人員' },
     { path: '/statistics', icon: <PieChart size={24} />, label: '統計' },
@@ -52,7 +54,8 @@ export default function Sidebar({ onLogout }: SidebarProps) {
           {/* 上半部選單區塊 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
             {menuItems.map((item) => {
-              const isActive = location.pathname === item.path || (item.path === '/triage' && location.pathname === '/');
+              // ★ 3. 修正 isActive 邏輯，避免 '/' 同時點亮兩個按鈕
+              const isActive = location.pathname === item.path;
               
               return (
                 <div 
