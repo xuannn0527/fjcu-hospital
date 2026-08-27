@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronRight, Clock, Users,} from 'lucide-react';
+import { ChevronRight, Clock, Users,  Thermometer, HeartPulse, Wind, Droplets, Activity } from 'lucide-react';
 
 // ==================== 假資料 ====================
 const mockPatients = [
@@ -56,14 +56,14 @@ const mockPatients = [
   },
 ];
 
-// ==================== 輔助元件：檢傷標籤 ====================
+// ==================== 輔助元件：檢傷標籤 (還原為實心膠囊) ====================
 const TriageBadge = ({ level }: { level: number }) => {
-  const colors: Record<number, { bg: string, border: string, text: string }> = {
-    1: { bg: '#FEF2F2', border: '#FCA5A5', text: '#EF4444' }, 
-    2: { bg: '#FFF7ED', border: '#FDBA74', text: '#F97316' }, 
-    3: { bg: '#FEFCE8', border: '#FDE047', text: '#EAB308' }, 
-    4: { bg: '#F0FDF4', border: '#86EFAC', text: '#22C55E' }, 
-    5: { bg: '#EFF6FF', border: '#93C5FD', text: '#3B82F6' }, 
+  const colors: Record<number, { bg: string, text: string }> = {
+    1: { bg: '#DC2626', text: 'white' }, // 紅
+    2: { bg: '#EA580C', text: 'white' }, // 橘
+    3: { bg: '#FACC15', text: '#3F3F46' }, // 黃
+    4: { bg: '#4ADE80', text: '#3F3F46' }, // 綠
+    5: { bg: '#3B82F6', text: 'white' }, // 藍
   };
   const current = colors[level] || colors[5];
 
@@ -71,45 +71,46 @@ const TriageBadge = ({ level }: { level: number }) => {
     <span style={{
       backgroundColor: current.bg,
       color: current.text,
-      border: `1px solid ${current.border}`,
-      padding: '4px 10px',
-      borderRadius: '6px',
+      padding: '4px 12px',
+      borderRadius: '20px',
       fontSize: '13px',
       fontWeight: 'bold',
       whiteSpace: 'nowrap',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minWidth: '56px'
+      display: 'inline-block'
     }}>
-      {level} 級
+      級數 {level}
     </span>
   );
 };
 
-// ==================== 輔助元件：精緻版生命徵象直條 ====================
-const VitalBar = ({ label, value, status, height }: { label: string, value: number, status: string, height: string }) => {
+// ==================== 輔助元件：生命徵象直條 (保留升級版) ====================
+const VitalBar = ({ label, value, status, height, Icon }: { label: string, value: number, status: string, height: string, Icon: any }) => {
   const isAbnormal = status === 'high' || status === 'low';
-  const barColor = isAbnormal ? '#EF4444' : (status === 'normal' ? '#10B981' : '#6EE7B7'); 
+  
+  const bgGradient = isAbnormal 
+    ? 'linear-gradient(to top, #F87171, #EF4444)' 
+    : 'linear-gradient(to top, #34D399, #10B981)';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
       <span style={{ 
         fontSize: '14px', 
         fontWeight: '900', 
-        color: isAbnormal ? '#EF4444' : '#334155',
-        fontFamily: 'monospace'
+        color: isAbnormal ? '#EF4444' : '#1E293B',
+        fontFamily: 'monospace',
+        letterSpacing: '-0.5px'
       }}>
         {value}
       </span>
       
       <div style={{ 
-        width: '6px', 
-        height: '36px', 
-        backgroundColor: '#E2E8F0', 
+        width: '8px', 
+        height: '40px', 
+        backgroundColor: '#F1F5F9', 
         borderRadius: '4px',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        border: '1px solid #E2E8F0' 
       }}>
         <div style={{
           position: 'absolute',
@@ -117,13 +118,16 @@ const VitalBar = ({ label, value, status, height }: { label: string, value: numb
           left: 0,
           right: 0,
           height: height,
-          backgroundColor: barColor,
-          borderRadius: '4px',
-          boxShadow: isAbnormal ? '0 0 4px rgba(239, 68, 68, 0.4)' : 'none'
+          background: bgGradient,
+          borderRadius: '3px',
+          boxShadow: isAbnormal ? '0 0 8px rgba(239, 68, 68, 0.4)' : 'none'
         }} />
       </div>
 
-      <span style={{ fontSize: '11px', color: '#64748B', fontWeight: '500' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#64748B' }}>
+        <Icon size={10} strokeWidth={2.5} />
+        <span style={{ fontSize: '11px', fontWeight: 'bold' }}>{label}</span>
+      </div>
     </div>
   );
 };
@@ -132,8 +136,8 @@ const VitalBar = ({ label, value, status, height }: { label: string, value: numb
 export default function WaitingList() {
   const [patients] = useState(mockPatients);
 
-  // 表格 Grid 排版比例 (優化留白比例)
-  const gridLayout = '70px 110px 140px 70px 1fr 340px 120px';
+  // 表格 Grid 排版比例 (稍微調窄基本資料欄位，配合無頭像設計)
+  const gridLayout = '70px 110px 120px 80px 1fr 380px 120px';
 
   return (
     <div style={{ 
@@ -144,22 +148,66 @@ export default function WaitingList() {
       fontFamily: 'sans-serif'
     }}>
       
+      {/* 注入 CSS 動畫 (用於 AI 按鈕發光) */}
+      <style>
+        {`
+          @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+          }
+          .ai-button-pulse {
+            animation: pulse-glow 2s infinite;
+          }
+          .patient-row:hover {
+            background-color: #F8FAFC !important;
+            border-left-color: #3B82F6 !important;
+          }
+        `}
+      </style>
+
       {/* 頁面內容區塊 */}
       <div style={{ padding: '24px 32px', flex: 1, overflow: 'auto' }}>
         
-        {/* 頂部標題區 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
+        {/* 頂部標題區 (加入醒目的候診人數) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Users color="#3B82F6" size={26} /> 當前候診名單
-            </h3>
+            <h1 style={{ 
+              fontSize: '24px', 
+              fontWeight: '900', 
+              color: '#0F172A', 
+              margin: '0 0 6px 0', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '12px' 
+            }}>
+              <div style={{ backgroundColor: '#DBEAFE', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+                <Users color="#2563EB" size={24} />
+              </div>
+              當前候診名單
+              {/* ★ 新增：醒目的候診人數標籤 */}
+              <span style={{ 
+                fontSize: '14px', 
+                backgroundColor: '#EFF6FF', 
+                color: '#2563EB', 
+                padding: '4px 12px', 
+                borderRadius: '20px',
+                border: '1px solid #BFDBFE',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                共 {patients.length} 人
+              </span>
+            </h1>
           </div>
         </div>
 
         <div style={{ 
           backgroundColor: 'white', 
-          borderRadius: '12px', 
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)',
+          borderRadius: '16px', 
+          boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)',
           border: '1px solid #E2E8F0',
           overflow: 'hidden'
         }}>
@@ -171,7 +219,7 @@ export default function WaitingList() {
             gap: '16px',
             padding: '16px 24px',
             backgroundColor: '#F8FAFC',
-            borderBottom: '2px solid #E2E8F0',
+            borderBottom: '1px solid #E2E8F0',
             fontSize: '13px',
             fontWeight: 'bold',
             color: '#64748B',
@@ -182,50 +230,50 @@ export default function WaitingList() {
             <div>姓名 / 基本資料</div>
             <div>檢傷</div>
             <div>護理主訴摘要</div>
-            <div style={{ textAlign: 'center' }}>生命徵象監測 (T ‧ HR ‧ RR ‧ BP ‧ SpO2)</div>
+            <div style={{ textAlign: 'center' }}>生命徵象即時分析</div>
             <div style={{ textAlign: 'center' }}>操作</div>
           </div>
 
           {/* 病患列表 */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {patients.map((patient, index) => (
-              <div key={patient.id} style={{
-                display: 'grid',
-                gridTemplateColumns: gridLayout,
-                gap: '16px',
-                padding: '20px 24px',
-                borderBottom: index === patients.length - 1 ? 'none' : '1px solid #F1F5F9',
-                alignItems: 'center',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F8FAFC'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              <div 
+                key={patient.id} 
+                className="patient-row"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: gridLayout,
+                  gap: '16px',
+                  padding: '20px 24px',
+                  borderBottom: index === patients.length - 1 ? 'none' : '1px solid #F1F5F9',
+                  borderLeft: '4px solid transparent',
+                  alignItems: 'center',
+                  transition: 'all 0.2s',
+                  backgroundColor: 'white' // 確保 hover 效果正常運作
+                }}
               >
                 {/* 1. 到診時間 */}
-                <div style={{ fontSize: '14px', color: '#475569', fontWeight: '500' }}>{patient.time}</div>
+                <div style={{ fontSize: '14px', color: '#64748B' }}>{patient.time}</div>
 
-                {/* 2. 病歷號 */}
+                {/* 2. 病歷號 (還原經典藍字底線) */}
                 <div>
-                  <span style={{ 
-                    color: '#475569', 
-                    fontSize: '13px', 
-                    fontFamily: 'monospace',
-                    backgroundColor: '#F1F5F9',
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid #E2E8F0'
+                  <a href="#" style={{ 
+                    color: '#2563EB', 
+                    textDecoration: 'underline', 
+                    fontSize: '14px',
+                    fontFamily: 'monospace' 
                   }}>
                     {patient.id}
-                  </span>
+                  </a>
                 </div>
 
-                {/* 3. 姓名與基本資料 */}
+                {/* 3. 姓名與基本資料 (還原無頭像排版) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#0F172A', letterSpacing: '0.5px' }}>{patient.name}</span>
-                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: '500' }}>{patient.gender} · {patient.age}</span>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1E293B' }}>{patient.name}</span>
+                  <span style={{ fontSize: '12px', color: '#64748B' }}>{patient.gender}, {patient.age}</span>
                 </div>
 
-                {/* 4. 檢傷級數 */}
+                {/* 4. 檢傷級數 (還原實心膠囊) */}
                 <div>
                   <TriageBadge level={patient.level} />
                 </div>
@@ -233,33 +281,29 @@ export default function WaitingList() {
                 {/* 5. 護理主訴 */}
                 <div style={{ 
                   fontSize: '13px', 
-                  color: '#334155', 
+                  color: '#475569', 
                   lineHeight: '1.6', 
                   paddingRight: '16px',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
                 }}>
                   {patient.summary}
                 </div>
 
-                {/* 6. 生命徵象視覺化 */}
+                {/* 6. 生命徵象視覺化 (保留升級圖示版) */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '14px' }}>
-                  <VitalBar label="體溫" value={patient.vitals.t.value} status={patient.vitals.t.status} height={patient.vitals.t.height} />
-                  <VitalBar label="心跳" value={patient.vitals.hr.value} status={patient.vitals.hr.status} height={patient.vitals.hr.height} />
-                  <VitalBar label="呼吸" value={patient.vitals.rr.value} status={patient.vitals.rr.status} height={patient.vitals.rr.height} />
-                  <VitalBar label="收縮壓" value={patient.vitals.bps.value} status={patient.vitals.bps.status} height={patient.vitals.bps.height} />
-                  <VitalBar label="舒張壓" value={patient.vitals.bpd.value} status={patient.vitals.bpd.status} height={patient.vitals.bpd.height} />
-                  <VitalBar label="血氧" value={patient.vitals.spo2.value} status={patient.vitals.spo2.status} height={patient.vitals.spo2.height} />
+                  <VitalBar label="體溫" value={patient.vitals.t.value} status={patient.vitals.t.status} height={patient.vitals.t.height} Icon={Thermometer} />
+                  <VitalBar label="心跳" value={patient.vitals.hr.value} status={patient.vitals.hr.status} height={patient.vitals.hr.height} Icon={HeartPulse} />
+                  <VitalBar label="呼吸" value={patient.vitals.rr.value} status={patient.vitals.rr.status} height={patient.vitals.rr.height} Icon={Wind} />
+                  <VitalBar label="收縮壓" value={patient.vitals.bps.value} status={patient.vitals.bps.status} height={patient.vitals.bps.height} Icon={Activity} />
+                  <VitalBar label="舒張壓" value={patient.vitals.bpd.value} status={patient.vitals.bpd.status} height={patient.vitals.bpd.height} Icon={Activity} />
+                  <VitalBar label="血氧" value={patient.vitals.spo2.value} status={patient.vitals.spo2.status} height={patient.vitals.spo2.height} Icon={Droplets} />
                 </div>
 
                 {/* 7. 操作按鈕 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
                   <button 
                     style={{
                       width: '100%',
-                      backgroundColor: '#3B82F6',
+                      background: 'linear-gradient(to right, #3B82F6, #2563EB)',
                       color: 'white',
                       border: 'none',
                       borderRadius: '8px',
@@ -272,20 +316,12 @@ export default function WaitingList() {
                       justifyContent: 'center',
                       gap: '4px',
                       transition: 'all 0.2s',
-                      boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#2563EB';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#3B82F6';
-                      e.currentTarget.style.transform = 'translateY(0)';
+                      boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)'
                     }}
                   >
-                    進入看診 <ChevronRight size={16} strokeWidth={2.5} />
+                    進入看診 <ChevronRight size={16} strokeWidth={3} />
                   </button>
-                 
+                  
                 </div>
 
               </div>
