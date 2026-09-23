@@ -1,5 +1,16 @@
-import { useState, useEffect } from 'react';
-import { ChevronRight, Clock, Users, Thermometer, HeartPulse, Wind, Droplets, Activity } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { 
+  ChevronRight, 
+  Clock, 
+  Users, 
+  Thermometer, 
+  HeartPulse, 
+  Wind, 
+  Droplets, 
+  Activity,
+  ArrowUp,
+  ArrowDown
+} from 'lucide-react';
 
 // ==================== 輔助元件：檢傷標籤 ====================
 const TriageBadge = ({ level }) => {
@@ -24,24 +35,23 @@ const TriageBadge = ({ level }) => {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      transform: 'translateX(-14px)' // ★ 扣掉左側 padding (14px)，讓膠囊內部的字完美切齊上方「檢傷」文字的左側！
+      transform: 'translateX(-14px)'
     }}>
       級數 {level}
     </span>
   );
 };
 
-// ==================== 輔助元件：簡約風直筒圓柱體（扁平化純色） ====================
+// ==================== 輔助元件：簡約風直筒圓柱體 ====================
 const VitalBarOnly = ({ value, status, height }) => {
-  // 改用單純俐落的純色，不再有複雜的 3D 光影漸層
-  let fillColor = '#10B981'; // 正常綠色
+  let fillColor = '#10B981';
   let textColor = '#1E293B';
 
   if (status === 'warning') {
-    fillColor = '#F59E0B'; // 黃色
+    fillColor = '#F59E0B';
     textColor = '#D97706';
   } else if (status === 'danger') {
-    fillColor = '#EF4444'; // 紅色
+    fillColor = '#EF4444';
     textColor = '#EF4444';
   }
 
@@ -57,17 +67,15 @@ const VitalBarOnly = ({ value, status, height }) => {
         {value ?? '--'}
       </span>
       
-      {/* ★ 簡約扁平風圓柱體：拔掉複雜光影，維持上方橢圓開口與直筒外型 */}
       <div style={{ 
         width: '18px', 
-        height: '54px', 
+        height: '66px', 
         backgroundColor: '#F8FAFC', 
         borderRadius: '0px 0px 5px 5px', 
         position: 'relative',
         overflow: 'hidden',
         border: '1px solid #CBD5E1' 
       }}>
-        {/* 頂部橢圓形開口蓋子 */}
         <div style={{
           position: 'absolute',
           top: '-3px',
@@ -80,7 +88,6 @@ const VitalBarOnly = ({ value, status, height }) => {
           zIndex: 3
         }} />
 
-        {/* 內部液體（純色扁平化） */}
         <div style={{
           position: 'absolute',
           bottom: 0,
@@ -92,7 +99,6 @@ const VitalBarOnly = ({ value, status, height }) => {
           zIndex: 2
         }} />
 
-        {/* 液體頂部的微光線條 */}
         <div style={{
           position: 'absolute',
           bottom: `calc(${height || '50%'} - 2px)`,
@@ -191,6 +197,8 @@ const evaluateVitals = (item) => {
 export default function WaitingList() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedLevel, setSelectedLevel] = useState(null);
+  const [timeSortOrder, setTimeSortOrder] = useState('asc');
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/patients')
@@ -203,7 +211,7 @@ export default function WaitingList() {
             name: item.name,
             gender: item.gender === 'M' ? '男' : '女',
             age: item.age,
-            level: item.final_level || 3,
+            level: Number(item.final_level) || 3,
             summary: item.chief_complaint || '無主訴紀錄',
             vitals: evaluateVitals(item)
           }));
@@ -217,25 +225,113 @@ export default function WaitingList() {
       });
   }, []);
 
-  const gridLayout = '80px 110px 160px 90px 330px 400px 110px';
+  const levelCounts = {
+    1: patients.filter(p => p.level === 1).length,
+    2: patients.filter(p => p.level === 2).length,
+    3: patients.filter(p => p.level === 3).length,
+    4: patients.filter(p => p.level === 4).length,
+    5: patients.filter(p => p.level === 5).length,
+  };
+
+  const toggleTimeSort = () => {
+    setTimeSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
+  };
+
+  const displayedPatients = useMemo(() => {
+    let result = selectedLevel === null 
+      ? [...patients] 
+      : patients.filter(p => p.level === selectedLevel);
+
+    result.sort((a, b) => {
+      return timeSortOrder === 'asc' 
+        ? a.time.localeCompare(b.time) 
+        : b.time.localeCompare(a.time);
+    });
+
+    return result;
+  }, [patients, selectedLevel, timeSortOrder]);
+
+  const triageFilterConfig = [
+    { level: 1, label: '一級', bg: '#DC2626', text: '#FFFFFF', border: '#DC2626' },
+    { level: 2, label: '二級', bg: '#EA580C', text: '#FFFFFF', border: '#EA580C' },
+    { level: 3, label: '三級', bg: '#FACC15', text: '#3F3F46', border: '#EAB308' },
+    { level: 4, label: '四級', bg: '#4ADE80', text: '#166534', border: '#4ADE80' },
+    { level: 5, label: '五級', bg: '#3B82F6', text: '#FFFFFF', border: '#3B82F6' },
+  ];
+
+  const gridLayout = '90px 110px 160px 90px 320px 400px 110px';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif' }}>
 
       <div style={{ padding: '24px 32px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-        {/* 頂部標題區 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', flexShrink: 0 }}>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#0F172A', margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* 頂部標題區與分級篩選 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexShrink: 0, flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ backgroundColor: '#DBEAFE', padding: '8px', borderRadius: '10px', display: 'flex' }}>
                 <Users color="#2563EB" size={24} />
               </div>
               當前候診名單
-              <span style={{ fontSize: '14px', backgroundColor: '#EFF6FF', color: '#2563EB', padding: '4px 12px', borderRadius: '20px', border: '1px solid #BFDBFE', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                共 {patients.length} 人
-              </span>
             </h1>
+
+            {/* 總人數按鈕 */}
+            <button
+              onClick={() => setSelectedLevel(null)}
+              style={{
+                fontSize: '13px',
+                backgroundColor: selectedLevel === null ? '#2563EB' : '#EFF6FF',
+                color: selectedLevel === null ? '#FFFFFF' : '#2563EB',
+                border: '1px solid #BFDBFE',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              全部 {patients.length} 人
+            </button>
+
+            {/* 分級篩選按鈕列 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {triageFilterConfig.map((item) => {
+                const count = levelCounts[item.level];
+                const isSelected = selectedLevel === item.level;
+
+                return (
+                  <button
+                    key={item.level}
+                    onClick={() => setSelectedLevel(isSelected ? null : item.level)}
+                    style={{
+                      fontSize: '13px',
+                      backgroundColor: isSelected ? item.bg : '#FFFFFF',
+                      color: isSelected ? item.text : '#475569',
+                      border: `1.5px solid ${isSelected ? item.border : '#CBD5E1'}`,
+                      padding: '5px 12px',
+                      borderRadius: '20px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: isSelected ? item.text : item.bg,
+                      display: 'inline-block'
+                    }} />
+                    <span>{item.label} {count} 人</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -255,7 +351,28 @@ export default function WaitingList() {
             alignItems: 'center',
             flexShrink: 0
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}><Clock size={14} style={{ marginRight: '4px' }} /> 到診</div>
+            <div 
+              onClick={toggleTimeSort}
+              title={`點擊切換排序 (${timeSortOrder === 'asc' ? '早到晚' : '晚到早'})`}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '4px',
+                height: '100%', 
+                cursor: 'pointer',
+                userSelect: 'none',
+                color: '#1E293B'
+              }}
+            >
+              <Clock size={14} style={{ marginRight: '2px', color: '#64748B' }} /> 
+              <span>到診</span>
+              {timeSortOrder === 'asc' ? (
+                <ArrowUp size={14} color="#2563EB" strokeWidth={2.5} />
+              ) : (
+                <ArrowDown size={14} color="#2563EB" strokeWidth={2.5} />
+              )}
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>病歷號</div>
             <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>姓名 / 基本資料</div>
             <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>檢傷</div>
@@ -280,10 +397,12 @@ export default function WaitingList() {
           <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', flex: 1 }}>
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>載入資料中...</div>
-            ) : patients.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>目前無候診病患資料</div>
+            ) : displayedPatients.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>
+                {selectedLevel ? `目前無級數 ${selectedLevel} 的候診病患` : '目前無候診病患資料'}
+              </div>
             ) : (
-              patients.map((patient, index) => (
+              displayedPatients.map((patient, index) => (
                 <div
                   key={patient.id}
                   style={{
@@ -291,10 +410,9 @@ export default function WaitingList() {
                     gridTemplateColumns: gridLayout,
                     gap: '16px',
                     padding: '38px 24px',
-                    borderBottom: index === patients.length - 1 ? 'none' : '1px solid #F1F5F9',
+                    borderBottom: index === displayedPatients.length - 1 ? 'none' : '1px solid #F1F5F9',
                     borderLeft: '4px solid transparent',
                     alignItems: 'center',
-                    transition: 'all 0.2s',
                     backgroundColor: 'white'
                   }}
                   onMouseEnter={(e) => {
@@ -306,7 +424,9 @@ export default function WaitingList() {
                     e.currentTarget.style.borderLeftColor = 'transparent';
                   }}
                 >
-                  <div style={{ fontSize: '14px', color: '#64748B', display: 'flex', alignItems: 'center', height: '100%' }}>{patient.time}</div>
+                  <div style={{ fontSize: '14px', color: '#64748B', display: 'flex', alignItems: 'center', height: '100%', fontWeight: '500' }}>
+                    {patient.time}
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
                     <a href="#" style={{ color: '#2563EB', textDecoration: 'underline', fontSize: '14px', fontFamily: 'monospace' }}>
                       {patient.id}
