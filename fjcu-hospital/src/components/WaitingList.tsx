@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { VitalBar } from '../components/VitalBar';
 
 // --- 介面與資料型別定義 ---
 interface PredictionPatient {
@@ -13,6 +14,13 @@ interface PredictionPatient {
   gender?: string; // 新增
   age?: number;    // 新增
   complaint?: string;
+ // ★ 新增：後端 API 直接回傳的生命徵象欄位
+  t?: number | string;
+  hr?: number | string;
+  rr?: number | string;
+  sbp?: number | string;
+  dbp?: number | string;
+  spo2?: number | string;
   vitals?: {
     t: number; hr: number; rr: number; sbp: number; dbp: number; spo2: number;
   };
@@ -45,22 +53,26 @@ export default function WaitingList() {
     fetch('http://127.0.0.1:8000/api/predictions')
       .then((res) => res.json())
       .then((data: PredictionPatient[]) => {
-        const enrichedData = data.map((item, index) => ({
-          ...item,
-         // ★ 修改重點：優先使用後端 API (資料庫) 回傳的到診時間
-          arrivalTime: item.arrivalTime || `10:${(10 + index * 3).toString().padStart(2, '0')}`,
-          medicalRecordNo: `00${8877665 + index}J`,
-          genderAge: index % 2 === 0 ? '女, 80Y' : '男, 40Y',
-          complaint: item.complaint || '無特殊主訴紀錄',
-          vitals: {
-            t: 36.5 + Math.random() * 2,
-            hr: 70 + Math.floor(Math.random() * 40),
-            rr: 16 + Math.floor(Math.random() * 10),
-            sbp: 110 + Math.floor(Math.random() * 60),
-            dbp: 70 + Math.floor(Math.random() * 30),
-            spo2: 95 + Math.floor(Math.random() * 5),
-          }
-        }));
+        const enrichedData = data.map((item, index) => {
+          // ★ 優先讀取後端資料，並轉為數字型別
+          const t = Number(item.vitals?.t ?? item.t ?? 36.5);
+          const hr = Number(item.vitals?.hr ?? item.hr ?? 75);
+          const rr = Number(item.vitals?.rr ?? item.rr ?? 18);
+          const sbp = Number(item.vitals?.sbp ?? item.sbp ?? 120);
+          const dbp = Number(item.vitals?.dbp ?? item.dbp ?? 80);
+          const spo2 = Number(item.vitals?.spo2 ?? item.spo2 ?? 98);
+
+          return {
+            ...item,
+            arrivalTime: item.arrivalTime || `10:${(10 + index * 3).toString().padStart(2, '0')}`,
+            medicalRecordNo: item.medicalRecordNo || `00${8877665 + index}J`,
+            gender: item.gender || (index % 2 === 0 ? '女' : '男'),
+            age: item.age ?? (index % 2 === 0 ? 80 : 40),
+            complaint: item.complaint || '無特殊主訴紀錄',
+            // ★ 將正確的生命徵象數據賦予 vitals
+            vitals: { t, hr, rr, sbp, dbp, spo2 }
+          };
+        });
         setPatients(enrichedData);
         setLoading(false);
       })
@@ -121,7 +133,7 @@ export default function WaitingList() {
   }, [patients, selectedLevel, sortConfig]);
 
   // ★ 修復 2：定義統一的 Grid 欄位寬度與間距，保證標頭與內容 100% 對齊
-  const gridLayout = '80px 110px 140px 90px minmax(220px, 1fr) 340px 180px';
+  const gridLayout = '80px 110px 140px 90px minmax(220px, 1fr) 340px 200px';
 
   // --- UI 元件: 頂部狀態列 ---
   const renderTopBar = () => {
@@ -168,15 +180,7 @@ export default function WaitingList() {
     );
   };
 
-  // --- UI 元件: 生命徵象小直條圖 ---
-  const VitalBar = ({ label, value, isWarning }: { label: string, value: string | number, isWarning: boolean }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30px' }}>
-      <span style={{ fontSize: '12px', fontWeight: 'bold', color: isWarning ? '#EF4444' : '#111827', marginBottom: '4px' }}>{value}</span>
-      <div style={{ width: '10px', height: '24px', backgroundColor: '#E5E7EB', borderRadius: '2px', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ position: 'absolute', bottom: 0, width: '100%', height: '60%', backgroundColor: isWarning ? '#EF4444' : (label === 'SBP' || label === 'DBP' ? '#F59E0B' : '#10B981') }} />
-      </div>
-    </div>
-  );
+  
 
   return (
     <div style={{ backgroundColor: '#F9FAFB', minHeight: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -276,7 +280,7 @@ export default function WaitingList() {
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#111827' }}>{patient.patient_name}</div>
                       <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '2px' }}>
-                                 {patient.gender ? `${patient.gender}, ${patient.age}Y` : '女, 80Y'}
+                                 {patient.gender}, {patient.age}Y
                                  </div>
                     </div>
                     <div>
@@ -290,13 +294,13 @@ export default function WaitingList() {
                     
                     {/* 生命徵象區塊 */}
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-                      <VitalBar label="T" value={patient.vitals?.t.toFixed(1) || '-'} isWarning={(patient.vitals?.t || 37) > 38} />
-                      <VitalBar label="HR" value={patient.vitals?.hr || '-'} isWarning={(patient.vitals?.hr || 80) > 100} />
-                      <VitalBar label="RR" value={patient.vitals?.rr || '-'} isWarning={(patient.vitals?.rr || 16) > 20} />
-                      <VitalBar label="SBP" value={patient.vitals?.sbp || '-'} isWarning={(patient.vitals?.sbp || 120) > 140} />
-                      <VitalBar label="DBP" value={patient.vitals?.dbp || '-'} isWarning={(patient.vitals?.dbp || 80) > 90} />
-                      <VitalBar label="SpO2" value={patient.vitals?.spo2 || '-'} isWarning={(patient.vitals?.spo2 || 99) < 94} />
-                    </div>
+                        <VitalBar label="T" displayValue={patient.vitals?.t.toFixed(1) || '-'} numericValue={patient.vitals?.t} age={patient.age} />
+                        <VitalBar label="HR" displayValue={patient.vitals?.hr || '-'} numericValue={patient.vitals?.hr} age={patient.age} />
+                        <VitalBar label="RR" displayValue={patient.vitals?.rr || '-'} numericValue={patient.vitals?.rr} age={patient.age} />
+                        <VitalBar label="SBP" displayValue={patient.vitals?.sbp || '-'} numericValue={patient.vitals?.sbp} age={patient.age} />
+                        <VitalBar label="DBP" displayValue={patient.vitals?.dbp || '-'} numericValue={patient.vitals?.dbp} age={patient.age} />
+                        <VitalBar label="SpO2" displayValue={patient.vitals?.spo2 || '-'} numericValue={patient.vitals?.spo2} age={patient.age} />
+                        </div>
 
                     {/* AI 預測區塊 */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
