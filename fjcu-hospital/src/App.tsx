@@ -9,6 +9,7 @@ import Settings from './components/Settings';
 import Records from './components/Records';
 import Statistics from './components/Statistics';
 import WaitingList from './components/WaitingList'; // ★ 1. 新增匯入 WaitingList
+import Predictions from './components/Predictions'; // ★ 新增匯入 Predictions
 import './App.css'; 
 
 function App() {
@@ -49,6 +50,8 @@ function App() {
               
               {/* 首頁 (急診看板) 則保留在 /triage */}
               <Route path="/triage" element={<Dashboard />} />
+              {/* ★ 新增 AI 預測數據路由 */}
+              <Route path="/predictions" element={<Predictions isDarkMode={isDarkMode} />} />
               
               <Route path="/records" element={<Records isDarkMode={isDarkMode} />} />
               <Route path="/statistics" element={<Statistics isDarkMode={isDarkMode} />} />
