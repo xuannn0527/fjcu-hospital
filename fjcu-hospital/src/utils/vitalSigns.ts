@@ -10,6 +10,7 @@ export const COLOR_GRAY = '#9CA3AF';   // 無資料
 export const getVitalStatusColor = (label: string, val?: number, age: number = 20): string => {
   if (val === undefined || val === null || isNaN(val)) return COLOR_GRAY;
 
+  
   // 1. 成人標準 (Age >= 18)
   if (age >= 18) {
     switch (label) {
@@ -17,7 +18,7 @@ export const getVitalStatusColor = (label: string, val?: number, age: number = 2
         if (val < 35.0 || val > 41.0) return COLOR_RED;
         if ((val >= 35.0 && val < 36.0) || (val >= 38.0 && val <= 40.9)) return COLOR_YELLOW;
         return COLOR_GREEN;
-      case 'SpO2':
+      case 'SPO2':
         if (val < 92) return COLOR_RED;
         if (val >= 92 && val <= 94) return COLOR_YELLOW;
         return COLOR_GREEN;
@@ -49,7 +50,7 @@ export const getVitalStatusColor = (label: string, val?: number, age: number = 2
         if (val < 35.0 || val > 41.0) return COLOR_RED;
         if ((val >= 35.0 && val < 36.0) || (val >= 38.0 && val <= 40.9)) return COLOR_YELLOW;
         return COLOR_GREEN;
-      case 'SpO2':
+      case 'SPO2':
         if (val < 92) return COLOR_RED;
         if (val >= 92 && val <= 94) return COLOR_YELLOW;
         return COLOR_GREEN;
@@ -75,7 +76,7 @@ export const getVitalStatusColor = (label: string, val?: number, age: number = 2
         if (val < 35.0 || val > 41.0) return COLOR_RED;
         if ((val >= 35.0 && val < 36.0) || (val >= 38.0 && val <= 40.9)) return COLOR_YELLOW;
         return COLOR_GREEN;
-      case 'SpO2':
+      case 'SPO2':
         if (val < 92) return COLOR_RED;
         if (val >= 92 && val <= 94) return COLOR_YELLOW;
         return COLOR_GREEN;
@@ -98,7 +99,7 @@ export const getVitalStatusColor = (label: string, val?: number, age: number = 2
     case 'T':
       if (val < 36.0 || val > 38.0) return COLOR_RED;
       return COLOR_GREEN;
-    case 'SpO2':
+    case 'SPO2':
       if (val < 92) return COLOR_RED;
       if (val >= 92 && val <= 94) return COLOR_YELLOW;
       return COLOR_GREEN;

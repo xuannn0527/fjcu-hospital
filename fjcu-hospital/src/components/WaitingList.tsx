@@ -231,7 +231,7 @@ export default function WaitingList() {
               <div style={{ textAlign: 'center' }}>
                 生命徵象即時分析
                 <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 'normal', marginTop: '2px' }}>
-                  T | HR | RR | SBP | DBP | SpO2
+                  T | HR | RR | SBP | DBP | SPO2
                 </div>
               </div>
 
@@ -299,7 +299,7 @@ export default function WaitingList() {
                         <VitalBar label="RR" displayValue={patient.vitals?.rr || '-'} numericValue={patient.vitals?.rr} age={patient.age} />
                         <VitalBar label="SBP" displayValue={patient.vitals?.sbp || '-'} numericValue={patient.vitals?.sbp} age={patient.age} />
                         <VitalBar label="DBP" displayValue={patient.vitals?.dbp || '-'} numericValue={patient.vitals?.dbp} age={patient.age} />
-                        <VitalBar label="SpO2" displayValue={patient.vitals?.spo2 || '-'} numericValue={patient.vitals?.spo2} age={patient.age} />
+                        <VitalBar label="SPO2" displayValue={patient.vitals?.spo2 || '-'} numericValue={patient.vitals?.spo2} age={patient.age} />
                         </div>
 
                     {/* AI 預測區塊 */}
