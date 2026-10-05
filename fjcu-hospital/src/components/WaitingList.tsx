@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom'; // ★ 1. 引入路由跳轉 Hook
 import { VitalBar } from '../components/VitalBar';
 
 // --- 介面與資料型別定義 ---
@@ -38,6 +39,7 @@ const triageColors: Record<number, string> = {
 export default function WaitingList() {
   const [patients, setPatients] = useState<PredictionPatient[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const navigate = useNavigate(); // ★ 2. 宣告 navigate 函式
 
   // 篩選狀態：null 代表顯示全部
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -280,8 +282,8 @@ export default function WaitingList() {
                     <div>
                       <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#111827' }}>{patient.patient_name}</div>
                       <div style={{ fontSize: '13px', color: '#6B7280', marginTop: '2px' }}>
-                                 {patient.gender}, {patient.age}Y
-                                 </div>
+                             {patient.gender}, {patient.age}Y
+                             </div>
                     </div>
                     <div>
                       <span style={{ backgroundColor: triageColors[patient.triage_degree] || '#9CA3AF', color: '#fff', padding: '4px 12px', borderRadius: '999px', fontSize: '13px', fontWeight: 'bold' }}>
@@ -316,6 +318,7 @@ export default function WaitingList() {
                       </div>
                       <button 
                         type="button"
+                        onClick={() => navigate(`/into-consult/${patient.prediction_id}`)} // ★ 3. 加上點擊跳轉並帶入 ID
                         style={{ width: '100%', padding: '6px', border: '1px solid #3B82F6', backgroundColor: '#fff', color: '#3B82F6', borderRadius: '4px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold', transition: '0.2s' }}
                         onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#EFF6FF' }}
                         onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}
