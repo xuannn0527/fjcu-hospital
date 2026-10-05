@@ -8,8 +8,9 @@ import Login from './components/Login';
 import Settings from './components/Settings'; 
 import Records from './components/Records';
 import Statistics from './components/Statistics';
-import WaitingList from './components/WaitingList'; // ★ 1. 新增匯入 WaitingList
-import Predictions from './components/Predictions'; // ★ 新增匯入 Predictions
+import WaitingList from './components/WaitingList'; 
+import Predictions from './components/Predictions'; 
+import IntoConsult from './components/IntoConsult'; // ★ 1. 匯入 IntoConsult 元件
 import './App.css'; 
 
 function App() {
@@ -45,18 +46,20 @@ function App() {
           
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', backgroundColor: bgColor, transition: 'background-color 0.3s' }}>
             <Routes>
-              {/* ★ 2. 將主頁路徑 (/) 指向 WaitingList */}
+              {/* 主頁路徑 (/) 指向 WaitingList */}
               <Route path="/" element={<WaitingList />} />
               
-              {/* 首頁 (急診看板) 則保留在 /triage */}
+              {/* ★ 2. 新增看診頁面路由，路徑設為 /into-consult/:id */}
+              <Route path="/into-consult/:id" element={<IntoConsult />} />
+              
+              {/* 首頁 (急診看板) 保留在 /triage */}
               <Route path="/triage" element={<Dashboard />} />
-              {/* ★ 新增 AI 預測數據路由 */}
               <Route path="/predictions" element={<Predictions isDarkMode={isDarkMode} />} />
               
               <Route path="/records" element={<Records isDarkMode={isDarkMode} />} />
               <Route path="/statistics" element={<Statistics isDarkMode={isDarkMode} />} />
               
-              {/* 3. 將 isDarkMode 與 setIsDarkMode 傳遞給 Settings */}
+              {/* 將 isDarkMode 與 setIsDarkMode 傳遞給 Settings */}
               <Route 
                 path="/settings" 
                 element={<Settings isDarkMode={isDarkMode} onToggleDarkMode={setIsDarkMode} />} 
