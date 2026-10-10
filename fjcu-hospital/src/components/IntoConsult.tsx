@@ -36,7 +36,113 @@ export default function IntoConsult() {
       [treatmentName]: !prev[treatmentName]
     }));
   };
+    // 只根據現有處置文字決定卡片的圖示與顏色
+  const getTreatmentVisual = (name: string) => {
+    const text = name.toLowerCase();
 
+    const categories = [
+      {
+        keywords: [
+          'aspirin', 'acetaminophen', 'paracetamol',
+          '藥物', '藥品', '藥', '止痛', '止吐',
+          '解熱', '抗生素'
+        ],
+        emoji: '💊',
+        label: '藥物',
+        bg: '#EFF6FF',
+        border: '#BFDBFE',
+        tagBg: '#DBEAFE',
+        tagColor: '#1D4ED8',
+      },
+      {
+        keywords: [
+          '注射', '針筒', '輸液', '點滴',
+          '靜脈導管', 'normal saline'
+        ],
+        emoji: '💉',
+        label: '注射／輸液',
+        bg: '#F0FDF9',
+        border: '#A7F3D0',
+        tagBg: '#D1FAE5',
+        tagColor: '#047857',
+      },
+      {
+        keywords: [
+          '檢驗', '檢查', '抽血', '血液',
+          '影像', 'x 光', 'x-ray', 'ecg',
+          'troponin', 'cbc', 'crp', '心電圖',
+          '超音波', '培養'
+        ],
+        emoji: '🩸',
+        label: '檢驗',
+        bg: '#FFFCF3',
+        border: '#FDE68A',
+        tagBg: '#FEF3C7',
+        tagColor: '#92400E',
+      },
+      {
+        keywords: [
+          '監測', '生命徵象', '血氧',
+          '血壓', '心跳', '呼吸速率'
+        ],
+        emoji: '🩺',
+        label: '監測',
+        bg: '#FAF7FF',
+        border: '#E9D5FF',
+        tagBg: '#F3E8FF',
+        tagColor: '#7E22CE',
+      },
+      {
+        keywords: [
+          '氧氣', '鼻導管', '呼吸支持',
+          '氧氣面罩', '呼吸照護'
+        ],
+        emoji: '🫁',
+        label: '呼吸支持',
+        bg: '#F0FDFA',
+        border: '#99F6E4',
+        tagBg: '#CCFBF1',
+        tagColor: '#0F766E',
+      },
+      {
+        keywords: ['會診', '照會', '專科醫師'],
+        emoji: '🩺',
+        label: '會診',
+        bg: '#FAF5FF',
+        border: '#DDD6FE',
+        tagBg: '#EDE9FE',
+        tagColor: '#6D28D9',
+      },
+    ];
+
+    // 找出這段文字涉及的所有類型，不修改原本的處置內容
+    const matched = categories.filter(category =>
+      category.keywords.some(keyword => text.includes(keyword))
+    );
+
+    // 同一句有多種類型時，同時顯示圖示與標籤
+    const primary = matched[0];
+
+    if (!primary) {
+      return {
+        emoji: '📋',
+        label: '其他處置',
+        bg: '#F8FAFC',
+        border: '#CBD5E1',
+        tagBg: '#E2E8F0',
+        tagColor: '#475569',
+      };
+    }
+
+    return {
+      emoji: matched.map(category => category.emoji).join(' '),
+      label: matched.map(category => category.label).join('／'),
+      bg: primary.bg,
+      border: primary.border,
+      tagBg: primary.tagBg,
+      tagColor: primary.tagColor,
+    };
+  };
   // 根據主訴與實際惡化風險機率（riskScore），動態計算成比例的 XAI 貢獻度與處置建議
   const generateXAIAndTreatment = (complaint: string, level: number, riskScore: number, spo2?: number, t?: number) => {
     const text = (complaint || '').toLowerCase();
@@ -330,7 +436,7 @@ export default function IntoConsult() {
 
         </div>
 
-        {/* 右側：TF-IDF 知識庫比對處置建議 */}
+        {/* TF-IDF 知識庫比對處置建議 (視覺化)*/}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           
           <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -351,19 +457,215 @@ export default function IntoConsult() {
                   💡 建議標準處置 (依據: 臨床實證醫療指引)
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {Object.keys(selectedTreatments).map((name) => (
-                    <label key={name} style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '16px', fontWeight: '500', color: '#1E293B' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedTreatments[name]} 
-                        onChange={() => handleCheckboxChange(name)}
-                        style={{ width: '18px', height: '18px', accentColor: '#4F46E5', cursor: 'pointer' }} 
-                      /> 
-                      {name}
-                    </label>
+                
+                {/* 處置分類圖例 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginBottom: '18px',
+                }}>
+                  <span style={{ fontSize: '13px', color: '#64748B' }}>
+                    處置分類：
+                  </span>
+                  {[
+                    { emoji: '💊', label: '藥物', color: '#2563EB', bg: '#EFF6FF' },
+                    { emoji: '💉', label: '注射', color: '#047857', bg: '#ECFDF5' },
+                    { emoji: '🩸', label: '檢驗', color: '#B45309', bg: '#FFFBEB' },
+                    { emoji: '🩺', label: '監測／會診', color: '#7E22CE', bg: '#FAF5FF' },
+                    { emoji: '🫁', label: '呼吸支持', color: '#0F766E', bg: '#F0FDFA' },
+                  ].map(item => (
+                    <span key={item.label} style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      backgroundColor: item.bg,
+                      color: item.color,
+                      fontSize: '12px',
+                      fontWeight: '600',
+                    }}>
+                      {item.emoji} {item.label}
+                    </span>
                   ))}
                 </div>
+
+                {/* 依原本處置文字產生視覺化卡片 */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '14px',
+                }}>
+                  {Object.keys(selectedTreatments).map((name) => {
+                    const visual = getTreatmentVisual(name);
+                    const checked = selectedTreatments[name];
+
+                    return (
+                      <label
+                        key={name}
+                        style={{
+                          position: 'relative',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          minHeight: '118px',
+                          padding: '16px 18px',
+                          borderRadius: '18px',
+                          border: `1px dashed ${
+                            checked ? visual.tagColor : visual.border
+                          }`,
+                          backgroundColor: checked ? visual.bg : visual.bg,
+                          boxShadow: checked
+                            ? `inset 0 0 0 1px ${visual.border}`
+                            : 'none',
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {/* 右上角勾選框 */}
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => handleCheckboxChange(name)}
+                          style={{
+                            position: 'absolute',
+                            top: '14px',
+                            right: '14px',
+                            width: '22px',
+                            height: '22px',
+                            accentColor: '#4F46E5',
+                            cursor: 'pointer',
+                            zIndex: 2,
+                          }}
+                        />
+
+                        {/* 淡色 Emoji 浮水印 */}
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            position: 'absolute',
+                            right: '12px',
+                            bottom: '-12px',
+                            fontSize: '76px',
+                            opacity: 0.12,
+                            pointerEvents: 'none',
+                            lineHeight: 1,
+                          }}
+                        >
+                          {visual.emoji.split(' ')[0]}
+                        </span>
+
+                        {/* 分類標籤 */}
+                        <span style={{
+                          position: 'relative',
+                          zIndex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          alignSelf: 'flex-start',
+                          maxWidth: 'calc(100% - 32px)',
+                          padding: '5px 12px',
+                          borderRadius: '999px',
+                          backgroundColor: visual.tagBg,
+                          color: visual.tagColor,
+                          fontSize: '12px',
+                          fontWeight: '700',
+                        }}>
+                          {visual.emoji} {visual.label}
+                        </span>
+
+                        {/* 原本的處置文字：不更改、不重新產生 */}
+                        <span style={{
+                          position: 'relative',
+                          zIndex: 1,
+                          fontSize: '15px',
+                          lineHeight: 1.6,
+                          fontWeight: '700',
+                          color: '#1E293B',
+                          paddingRight: '8px',
+                          overflowWrap: 'anywhere',
+                        }}>
+                          {name}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                {/* 勾選數量與操作 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  marginTop: '20px',
+                  paddingTop: '16px',
+                  borderTop: '1px solid #E2E8F0',
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    color: '#64748B',
+                  }}>
+                    已勾選處置項目：
+                    <strong style={{ color: '#4F46E5' }}>
+                      {' '}{Object.values(selectedTreatments).filter(Boolean).length}
+                    </strong>
+                    {' / '}{Object.keys(selectedTreatments).length} 項
+                  </span>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTreatments(prev =>
+                          Object.fromEntries(
+                            Object.keys(prev).map(name => [name, true])
+                          )
+                        );
+                      }}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#4F46E5',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      全選
+                    </button>
+
+                    <span style={{ color: '#CBD5E1' }}>•</span>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTreatments(prev =>
+                          Object.fromEntries(
+                            Object.keys(prev).map(name => [name, false])
+                          )
+                        );
+                      }}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#64748B',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      全取消
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
               <div style={{ marginBottom: '20px' }}>
