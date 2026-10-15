@@ -1,0 +1,111 @@
+.vital-bar {
+  position: relative;
+  display: flex;
+  flex: 0 0 36px;
+  flex-direction: column;
+  align-items: center;
+  width: 36px;
+  cursor: help;
+  outline: none;
+}
+
+.vital-bar__value {
+  margin-bottom: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.vital-bar__track {
+  position: relative;
+  width: 14px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: #e5e7eb;
+  box-shadow: inset 0 0 0 1px rgb(17 24 39 / 5%);
+}
+
+.vital-bar__chart {
+  position: relative;
+  width: 14px;
+  height: 76px;
+}
+
+.vital-bar__fill {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-radius: 3px;
+  transition: height 0.3s ease, background-color 0.3s ease;
+}
+
+.vital-bar__limit {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 0;
+  border-top: 1.5px dashed #111827;
+  pointer-events: none;
+}
+
+.vital-bar__tooltip {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  display: flex;
+  visibility: hidden;
+  flex-direction: column;
+  gap: 4px;
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 10px;
+  transform: translate(-50%, 4px);
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background: #1f2937;
+  box-shadow: 0 4px 12px rgb(17 24 39 / 20%);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+}
+
+.vital-bar__tooltip::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-right: 1px solid #374151;
+  border-bottom: 1px solid #374151;
+  background: #1f2937;
+  content: '';
+}
+
+.vital-bar__tooltip strong {
+  font-size: 12px;
+}
+
+.vital-bar:hover .vital-bar__tooltip,
+.vital-bar:focus-visible .vital-bar__tooltip {
+  visibility: visible;
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.vital-bar:focus-visible .vital-bar__track {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vital-bar__fill,
+  .vital-bar__tooltip {
+    transition: none;
+  }
+}

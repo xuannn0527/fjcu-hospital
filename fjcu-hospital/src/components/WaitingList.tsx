@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom'; // ★ 1. 引入路由跳轉 Hook
 import { VitalBar } from '../components/VitalBar';
+import { useProcessedPatients } from '../context/useProcessedPatients';
 
 // --- 介面與資料型別定義 ---
 interface PredictionPatient {
@@ -40,6 +41,7 @@ export default function WaitingList() {
   const [patients, setPatients] = useState<PredictionPatient[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const navigate = useNavigate(); // ★ 2. 宣告 navigate 函式
+  const { isPatientProcessed } = useProcessedPatients();
 
   // 篩選狀態：null 代表顯示全部
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
@@ -85,8 +87,9 @@ export default function WaitingList() {
   }, []);
 
   // 計算各級檢傷人數
-  const counts = { total: patients.length, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-  patients.forEach(p => {
+  const activePatients = patients.filter((patient) => !isPatientProcessed(String(patient.prediction_id)));
+  const counts = { total: activePatients.length, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  activePatients.forEach(p => {
     if (p.triage_degree >= 1 && p.triage_degree <= 5) {
       counts[p.triage_degree as keyof typeof counts]++;
     }
@@ -104,7 +107,7 @@ export default function WaitingList() {
 
   // 篩選與排序後的資料
   const displayedPatients = useMemo(() => {
-    let result = [...patients];
+    let result = [...activePatients];
 
     // 1. 級別過濾
     if (selectedLevel !== null) {
@@ -132,7 +135,7 @@ export default function WaitingList() {
     }
 
     return result;
-  }, [patients, selectedLevel, sortConfig]);
+  }, [activePatients, selectedLevel, sortConfig]);
 
   // ★ 修復 2：定義統一的 Grid 欄位寬度與間距，保證標頭與內容 100% 對齊
   const gridLayout = '80px 110px 140px 90px minmax(220px, 1fr) 340px 200px';
@@ -204,7 +207,11 @@ export default function WaitingList() {
               color: '#6B7280', 
               fontSize: '14px', 
               fontWeight: 'bold',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              backgroundColor: '#fff',
             }}>
               
               {/* 到診 (帶排序箭頭) */}
@@ -232,8 +239,19 @@ export default function WaitingList() {
               {/* 生命徵象即時分析 */}
               <div style={{ textAlign: 'center' }}>
                 生命徵象即時分析
-                <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 'normal', marginTop: '2px' }}>
-                  T | HR | RR | SBP | DBP | SPO2
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(6, 36px)',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  fontSize: '11px',
+                  color: '#9CA3AF',
+                  fontWeight: 'normal',
+                  marginTop: '2px',
+                }}>
+                  {['T', 'HR', 'RR', 'SBP', 'DBP', 'SPO2'].map((label) => (
+                    <span key={label}>{label}</span>
+                  ))}
                 </div>
               </div>
 

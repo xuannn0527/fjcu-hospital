@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useProcessedPatients } from '../context/useProcessedPatients';
 
 // 1. 建立假資料
 const mockRecords = [
@@ -37,6 +38,7 @@ const mockRecords = [
 ];
 
 export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
+  const { processedPatients } = useProcessedPatients();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
@@ -71,6 +73,46 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
           </button>
         </div>
       </div>
+
+      <section style={{ marginBottom: '24px', padding: '20px', borderRadius: '10px', border: '1px solid #DBEAFE', backgroundColor: isDarkMode ? '#172554' : '#EFF6FF' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+          <div>
+            <h3 style={{ margin: 0, color: isDarkMode ? '#DBEAFE' : '#1E3A8A', fontSize: '16px' }}>醫師決策回饋歷史紀錄</h3>
+            <p style={{ margin: '4px 0 0', color: isDarkMode ? '#BFDBFE' : '#64748B', fontSize: '12px' }}>完成決策回饋的病患已從即時候診清單移除</p>
+          </div>
+          <span style={{ color: isDarkMode ? '#DBEAFE' : '#1D4ED8', fontWeight: 'bold', fontSize: '13px' }}>{processedPatients.length} 筆</span>
+        </div>
+        {processedPatients.length ? (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: '#64748B', backgroundColor: isDarkMode ? '#334155' : '#F8FAFC' }}>
+                  {['完成時間', '病患', '病歷號', '檢傷', '主訴', '生命徵象', '醫師決策', '文字回饋', '已勾選處置'].map((heading) => (
+                    <th key={heading} style={{ padding: '10px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>{heading}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...processedPatients].sort((a, b) => b.processedAt.localeCompare(a.processedAt)).map((patient) => (
+                  <tr key={patient.patientId} style={{ borderTop: '1px solid #E2E8F0', color: isDarkMode ? '#E2E8F0' : '#334155' }}>
+                    <td style={{ padding: '11px 12px', whiteSpace: 'nowrap', fontSize: '12px' }}>{new Date(patient.processedAt).toLocaleString('zh-TW', { hour12: false })}</td>
+                    <td style={{ padding: '11px 12px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>{patient.name}<div style={{ color: '#64748B', fontSize: '11px', fontWeight: 'normal' }}>{patient.gender} · {patient.age} 歲</div></td>
+                    <td style={{ padding: '11px 12px', whiteSpace: 'nowrap' }}>{patient.medicalRecordNo}</td>
+                    <td style={{ padding: '11px 12px', whiteSpace: 'nowrap' }}>第 {patient.triageLevel} 級</td>
+                    <td style={{ padding: '11px 12px', minWidth: '150px' }}>{patient.complaint}</td>
+                    <td style={{ padding: '11px 12px', minWidth: '180px', fontSize: '12px' }}>{patient.vitals ? Object.entries(patient.vitals).map(([label, value]) => `${label}: ${value}`).join(' · ') : '未提供'}</td>
+                    <td style={{ padding: '11px 12px', minWidth: '170px' }}>{patient.decision}</td>
+                    <td style={{ padding: '11px 12px', minWidth: '160px' }}>{patient.doctorNote || '未填寫'}</td>
+                    <td style={{ padding: '11px 12px', minWidth: '160px' }}>{patient.treatments.length ? patient.treatments.join('、') : '無'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ padding: '20px 8px', color: '#64748B', fontSize: '13px', textAlign: 'center' }}>尚無已歸檔的醫師決策回饋</div>
+        )}
+      </section>
 
       {/* 病歷表格 */}
       <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #E5E7EB' }}>

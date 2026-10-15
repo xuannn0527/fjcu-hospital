@@ -11,6 +11,7 @@ import Statistics from './components/Statistics';
 import WaitingList from './components/WaitingList'; 
 import Predictions from './components/Predictions'; 
 import IntoConsult from './components/IntoConsult'; // ★ 1. 匯入 IntoConsult 元件
+import { ProcessedPatientsProvider } from './context/ProcessedPatientsProvider';
 import './App.css'; 
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ProcessedPatientsProvider>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', margin: 0, padding: 0, backgroundColor: bgColor, transition: 'background-color 0.3s' }}>
         
         <Header />
@@ -71,6 +73,7 @@ function App() {
 
         </div>
       </div>
+      </ProcessedPatientsProvider>
     </BrowserRouter>
   );
 }

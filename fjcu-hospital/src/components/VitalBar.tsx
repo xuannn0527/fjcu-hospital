@@ -1,5 +1,6 @@
-import React from 'react';
-import { getVitalStatusColor } from '../utils/vitalSigns';
+import React, { useId } from 'react';
+import { formatRange, getNormalRange, getVitalStatus } from '../utils/vitalSigns';
+import './VitalBar.css';
 
 interface VitalBarProps {
   label: string;
@@ -8,55 +9,76 @@ interface VitalBarProps {
   age?: number;
 }
 
-// 根據項目與數值動態計算百分比高度 (10% ~ 100%)
-const getVitalHeight = (label: string, val?: number): number => {
-  if (val === undefined || val === null) return 50;
-  
-  const key = label.trim().toUpperCase();
-  switch (key) {
-    case 'T': // 體溫 (35°C ~ 41°C)
-      return Math.min(100, Math.max(10, ((val - 35) / (41 - 35)) * 100));
-    case 'HR': // 心跳 (40 ~ 160)
-      return Math.min(100, Math.max(10, ((val - 40) / (160 - 40)) * 100));
-    case 'RR': // 呼吸頻率 (10 ~ 40)
-      return Math.min(100, Math.max(10, ((val - 10) / (40 - 10)) * 100));
-    case 'SBP': // 收縮壓 (70 ~ 190)
-      return Math.min(100, Math.max(10, ((val - 70) / (190 - 70)) * 100));
-    case 'DBP': // 舒張壓 (40 ~ 120)
-      return Math.min(100, Math.max(10, ((val - 40) / (120 - 40)) * 100));
-    case 'SPO2': // 血氧 (0% ~ 100%)
-      return Math.min(100, Math.max(10, val));
-    default:
-      return 60;
-  }
+const VITAL_SCALES: Record<string, { min: number; max: number }> = {
+  T: { min: 32, max: 42 },
+  HR: { min: 40, max: 150 },
+  RR: { min: 5, max: 30 },
+  SBP: { min: 60, max: 240 },
+  DBP: { min: 30, max: 140 },
+  SPO2: { min: 80, max: 100 },
 };
 
-export const VitalBar: React.FC<VitalBarProps> = ({ 
-  label, 
-  displayValue, 
-  numericValue, 
-  age 
+const getVitalScale = (label: string): { min: number; max: number } | undefined =>
+  VITAL_SCALES[label.trim().toUpperCase()];
+
+const getRawPercent = (label: string, val: number): number | undefined => {
+  const scale = getVitalScale(label);
+  if (!scale || !Number.isFinite(val)) return undefined;
+  return ((val - scale.min) / (scale.max - scale.min)) * 100;
+};
+
+const getVitalHeight = (label: string, val: number | undefined): number => {
+  if (val === undefined || val === null || !Number.isFinite(val)) return 50;
+  const percent = getRawPercent(label, val);
+  if (percent === undefined) return 60;
+  return Math.min(100, Math.max(10, percent));
+};
+
+export const VitalBar: React.FC<VitalBarProps> = ({
+  label,
+  displayValue,
+  numericValue,
+  age = 20,
 }) => {
-  const color = getVitalStatusColor(label, numericValue, age);
-  const barHeight = getVitalHeight(label, numericValue); // 計算動態高度
+  const { color, detail } = getVitalStatus(label, numericValue, age);
+  const barHeight = getVitalHeight(label, numericValue);
+  const range = getNormalRange(label, age);
+  const rangeText = formatRange(range);
+  const tooltipId = useId();
+  const markers = [range?.min, range?.max]
+    .filter((value): value is number => value !== undefined)
+    .map((value) => getRawPercent(label, value))
+    .filter((percent): percent is number => percent !== undefined && percent > 0 && percent < 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '30px' }}>
-      <span style={{ fontSize: '12px', fontWeight: 'bold', color: color, marginBottom: '4px' }}>
+    <div
+      className="vital-bar"
+      tabIndex={0}
+      aria-describedby={tooltipId}
+      aria-label={`${label}: ${displayValue}，${detail}${rangeText ? `，正常範圍 ${rangeText}` : ''}`}
+    >
+      <span className="vital-bar__value" style={{ color }}>
         {displayValue}
       </span>
-      <div style={{ width: '10px', height: '24px', backgroundColor: '#E5E7EB', borderRadius: '2px', overflow: 'hidden', position: 'relative' }}>
-        <div 
-          style={{ 
-            position: 'absolute', 
-            bottom: 0, 
-            width: '100%', 
-            height: `${barHeight}%`, // 使用動態高度
-            backgroundColor: color,
-            transition: 'height 0.3s ease'
-          }} 
-        />
+      <div className="vital-bar__chart" aria-hidden="true">
+        <div className="vital-bar__track">
+          <div
+            className="vital-bar__fill"
+            style={{
+              height: `${barHeight}%`,
+              backgroundColor: color,
+            }}
+          />
+        </div>
+        {markers.map((percent) => (
+          <div key={percent} className="vital-bar__limit" style={{ bottom: `${percent}%` }} />
+        ))}
       </div>
+      <span id={tooltipId} role="tooltip" className="vital-bar__tooltip">
+        <strong>{label}: {displayValue}</strong>
+        <span>{detail}</span>
+        {rangeText && <span>正常範圍: {rangeText}</span>}
+      </span>
     </div>
   );
 };
