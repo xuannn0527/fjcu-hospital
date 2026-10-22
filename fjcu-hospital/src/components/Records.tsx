@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useProcessedPatients } from '../context/useProcessedPatients';
 
+
 // 1. 建立假資料
 const mockRecords = [
   {
@@ -13,7 +14,7 @@ const mockRecords = [
     complaint: '胸口劇烈壓迫感伴隨冷汗',
     triageLevel: '第 2 級 - 危急',
     triageRule: '[A0301] 中度呼吸徵象異常或 SpO2 92-94% [N0402] 急性中度頭痛伴隨發燒 (Temp > 38.5°C)',
-    triageColor: '#C2410C', 
+    triageColor: '#C2410C',
     triageBg: '#FFEDD5',    
     triageBorder: '#FDBA74',
     nurse: '黃曉萱',
@@ -29,7 +30,7 @@ const mockRecords = [
     complaint: '跌倒左手關節腫脹變形',
     triageLevel: '第 3 級 - 緊急',
     triageRule: '[A0401] 輕度呼吸徵象異常 [N0501] 肢體疑似骨折',
-    triageColor: '#B45309', 
+    triageColor: '#B45309',
     triageBg: '#FEF3C7',
     triageBorder: '#FCD34D',
     nurse: '孫語謙',
@@ -37,35 +38,40 @@ const mockRecords = [
   },
 ];
 
+type MockRecord = (typeof mockRecords)[number];
+
 export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
   const { processedPatients } = useProcessedPatients();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  const [selectedPatient, setSelectedPatient] = useState<MockRecord | null>(null);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
 
-  const handleOpenModal = (patient: any, mode: 'view' | 'edit') => {
+
+  const handleOpenModal = (patient: MockRecord, mode: 'view' | 'edit') => {
     setSelectedPatient(patient);
     setModalMode(mode);
     setIsModalOpen(true);
   };
+
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPatient(null);
   };
 
+
   return (
     <div style={{ padding: '24px', color: isDarkMode ? 'white' : '#333', position: 'relative', height: '100%' }}>
-      
+     
       {/* 頂部標題與搜尋區塊 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <span style={{ color: '#2563EB' }}></span> 急診檢傷歷史病歷紀錄
         </h2>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <input 
-            type="text" 
-            placeholder="搜尋病患姓名、身分證號、病歷號..." 
+          <input
+            type="text"
+            placeholder="搜尋病患姓名、身分證號、病歷號..."
             style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #D1D5DB', width: '280px', outline: 'none', fontSize: '14px' }}
           />
           <button style={{ padding: '8px 16px', borderRadius: '20px', border: '1px solid #D1D5DB', backgroundColor: isDarkMode ? '#334155' : '#F3F4F6', color: isDarkMode ? 'white' : '#4B5563', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}>
@@ -73,6 +79,7 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
           </button>
         </div>
       </div>
+
 
       <section style={{ marginBottom: '24px', padding: '20px', borderRadius: '10px', border: '1px solid #DBEAFE', backgroundColor: isDarkMode ? '#172554' : '#EFF6FF' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
@@ -87,7 +94,7 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: isDarkMode ? '#1E293B' : '#FFFFFF' }}>
               <thead>
                 <tr style={{ textAlign: 'left', color: '#64748B', backgroundColor: isDarkMode ? '#334155' : '#F8FAFC' }}>
-                  {['完成時間', '病患', '病歷號', '檢傷', '主訴', '生命徵象', '醫師決策', '文字回饋', '已勾選處置'].map((heading) => (
+                  {['完成時間', '病患', '病歷號', '檢傷', '主訴', '生命徵象', '醫師決策', '急診去向', '文字回饋', '已勾選處置'].map((heading) => (
                     <th key={heading} style={{ padding: '10px 12px', fontSize: '12px', whiteSpace: 'nowrap' }}>{heading}</th>
                   ))}
                 </tr>
@@ -102,6 +109,7 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                     <td style={{ padding: '11px 12px', minWidth: '150px' }}>{patient.complaint}</td>
                     <td style={{ padding: '11px 12px', minWidth: '180px', fontSize: '12px' }}>{patient.vitals ? Object.entries(patient.vitals).map(([label, value]) => `${label}: ${value}`).join(' · ') : '未提供'}</td>
                     <td style={{ padding: '11px 12px', minWidth: '170px' }}>{patient.decision}</td>
+                    <td style={{ padding: '11px 12px', minWidth: '170px' }}>{patient.disposition || '未設定'}</td>
                     <td style={{ padding: '11px 12px', minWidth: '160px' }}>{patient.doctorNote || '未填寫'}</td>
                     <td style={{ padding: '11px 12px', minWidth: '160px' }}>{patient.treatments.length ? patient.treatments.join('、') : '無'}</td>
                   </tr>
@@ -113,6 +121,7 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
           <div style={{ padding: '20px 8px', color: '#64748B', fontSize: '13px', textAlign: 'center' }}>尚無已歸檔的醫師決策回饋</div>
         )}
       </section>
+
 
       {/* 病歷表格 */}
       <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid #E5E7EB' }}>
@@ -153,18 +162,19 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
         </table>
       </div>
 
+
       {/* 彈出視窗 (Modal) */}
       {isModalOpen && selectedPatient && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
           backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
         }}>
-          
-          <div style={{ 
-            backgroundColor: 'white', width: '900px', maxHeight: '90vh', overflowY: 'auto', 
-            borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', color: '#333' 
+         
+          <div style={{
+            backgroundColor: 'white', width: '900px', maxHeight: '90vh', overflowY: 'auto',
+            borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', color: '#333'
           }}>
-            
+           
             {/* Modal 頂部深色標題列 */}
             <div style={{ backgroundColor: '#1E293B', color: 'white', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
               <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -186,15 +196,17 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
               </div>
             </div>
 
+
             {/* Modal 內容區 */}
             <div style={{ padding: '32px 48px' }}>
-              
+             
               {/* 醫院表頭 */}
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', letterSpacing: '2px', color: '#111827' }}>天主教輔仁大學附設醫院</h2>
                 <h3 style={{ margin: '0 0 4px 0', fontSize: '16px', color: '#1F2937' }}>急診護理評估與檢傷紀錄單</h3>
                 <p style={{ margin: 0, color: '#6B7280', fontSize: '13px', fontFamily: 'serif' }}>Nursing Assessment & Triage Record</p>
               </div>
+
 
               {/* 病患基本資料表 */}
               <div style={{ borderTop: '1px solid #E5E7EB', borderBottom: '1px solid #E5E7EB', padding: '16px 0', marginBottom: '24px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px 24px', fontSize: '14px' }}>
@@ -208,11 +220,12 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                 <div><strong>大傷事件:</strong> 無</div>
               </div>
 
+
               {/* 一、病患主訴 */}
               <h4 style={{ margin: '0 0 8px 0', color: '#111827', fontSize: '15px' }}>一、病患主訴 (Chief Complaint)</h4>
               <div style={{ marginBottom: '24px' }}>
                 {modalMode === 'edit' ? (
-                  <textarea 
+                  <textarea
                     defaultValue={selectedPatient.complaint}
                     style={{ width: '100%', border: '1px solid #CBD5E1', padding: '12px', borderRadius: '4px', minHeight: '60px', fontSize: '14px', fontFamily: 'inherit', resize: 'vertical', outlineColor: '#3B82F6', boxSizing: 'border-box' }}
                   />
@@ -222,6 +235,7 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                   </div>
                 )}
               </div>
+
 
               {/* 二、生命徵象 */}
               <h4 style={{ margin: '0 0 8px 0', color: '#111827', fontSize: '15px' }}>二、生命徵象 (Vital Signs)</h4>
@@ -236,9 +250,9 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                   'GCS': selectedPatient.vitals.gcs,
                   '疼痛指數 (分)': selectedPatient.vitals.pain
                 }).map(([label, value]) => {
-                  const cleanLabel = label.split(' ')[0]; 
+                  const cleanLabel = label.split(' ')[0];
                   const unit = label.split(' ')[1] || '';
-                  
+                 
                   return (
                     <div key={label} style={{ fontSize: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <strong style={{ color: '#374151' }}>{cleanLabel}:</strong>
@@ -252,6 +266,7 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                   )
                 })}
               </div>
+
 
               {/* 三、檢傷分級判定 */}
               <h4 style={{ margin: '0 0 8px 0', color: '#111827', fontSize: '15px' }}>三、TTAS 檢傷分級判定</h4>
@@ -268,11 +283,12 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                 </div>
               </div>
 
+
               {/* 修改點 2：底部按鈕區 - 根據模式改變佈局 */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: modalMode === 'edit' ? 'flex-end' : 'space-between', 
-                alignItems: 'center', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #E5E7EB' 
+              <div style={{
+                display: 'flex',
+                justifyContent: modalMode === 'edit' ? 'flex-end' : 'space-between',
+                alignItems: 'center', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #E5E7EB'
               }}>
                 {/* 只有檢視模式才顯示派案選單 */}
                 {modalMode === 'view' && (
@@ -284,14 +300,15 @@ export default function Records({ isDarkMode }: { isDarkMode?: boolean }) {
                     </select>
                   </div>
                 )}
-                
-                <button 
-                  onClick={modalMode === 'edit' ? handleCloseModal : undefined} 
+               
+                <button
+                  onClick={modalMode === 'edit' ? handleCloseModal : undefined}
                   style={{ backgroundColor: '#059669', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   {modalMode === 'edit' ? '💾 儲存修改內容' : '確定傳送給醫師'}
                 </button>
               </div>
+
 
             </div>
           </div>

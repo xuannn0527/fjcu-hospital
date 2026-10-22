@@ -1,38 +1,22 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { ProcessedPatientsContext, type ProcessedPatient } from './ProcessedPatientsStore';
+import { useState, type ReactNode } from 'react';
+import {
+  ProcessedPatientsContext,
+  type ProcessedPatient,
+} from './ProcessedPatientsStore';
 
-const STORAGE_KEY = 'fjcu-processed-patients';
+interface ProcessedPatientsProviderProps {
+  children: ReactNode;
+}
 
-const readProcessedPatients = (): ProcessedPatient[] => {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-
-    const parsed: unknown = JSON.parse(stored);
-    if (!Array.isArray(parsed)) throw new Error('已歸檔病患資料格式錯誤');
-    return parsed as ProcessedPatient[];
-  } catch (error) {
-    console.error('讀取已處理病患歸檔失敗:', error);
-    return [];
-  }
-};
-
-export function ProcessedPatientsProvider({ children }: { children: ReactNode }) {
-  const [processedPatients, setProcessedPatients] = useState<ProcessedPatient[]>(readProcessedPatients);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(processedPatients));
-    } catch (error) {
-      console.error('儲存已處理病患歸檔失敗:', error);
-    }
-  }, [processedPatients]);
+export function ProcessedPatientsProvider({ children }: ProcessedPatientsProviderProps) {
+  const [processedPatients, setProcessedPatients] = useState<ProcessedPatient[]>([]);
 
   const archivePatient = (patient: ProcessedPatient) => {
-    setProcessedPatients((current) => [
-      patient,
-      ...current.filter((item) => item.patientId !== patient.patientId),
-    ]);
+    setProcessedPatients((currentPatients) =>
+      currentPatients.some((currentPatient) => currentPatient.patientId === patient.patientId)
+        ? currentPatients
+        : [...currentPatients, patient],
+    );
   };
 
   const isPatientProcessed = (patientId: string) =>

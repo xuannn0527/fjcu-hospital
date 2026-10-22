@@ -1,35 +1,40 @@
+
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProcessedPatients } from '../context/useProcessedPatients';
-import { 
-  ArrowLeft, 
-  Bot, 
-  BrainCircuit, 
-  BookOpen, 
-  ChevronRight, 
-  FileText,
+import {
+  ArrowLeft,
+  Bot,
+  BrainCircuit,
+  BookOpen,
   AlertTriangle
 } from 'lucide-react';
 
+
 export default function IntoConsult() {
-  const { id } = useParams(); 
+  const { id } = useParams();
   const navigate = useNavigate();
   const { archivePatient } = useProcessedPatients();
   const [loading, setLoading] = useState<boolean>(true);
   const [patient, setPatient] = useState<any>(null);
 
+
   // Modal 與 Toast 狀態管理
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingFeedback, setPendingFeedback] = useState('');
-  const [doctorFeedback, setDoctorFeedback] = useState('');
+  const [decisionMode, setDecisionMode] = useState<'adopt' | 'stable' | 'unsuitable'>('adopt');
+  const [disposition, setDisposition] = useState('急診留觀室 (Observation)');
+
 
   // 處置項目的勾選狀態
   const [selectedTreatments, setSelectedTreatments] = useState<Record<string, boolean>>({
     "安排 12 導程心電圖 (ECG)": true,
     "抽血檢驗心肌酵素 (Troponin)": true,
-    "氧氣鼻導管, 開立 Aspirin": false,
-    "聯絡照會心臟內科 (CV) 評估": false,
+    "氧氣鼻導管, 開立 Aspirin": true,
+    "聯絡照會心臟內科 (CV) 評估": true,
   });
+
 
   const handleCheckboxChange = (treatmentName: string) => {
     setSelectedTreatments(prev => ({
@@ -37,9 +42,18 @@ export default function IntoConsult() {
       [treatmentName]: !prev[treatmentName]
     }));
   };
+
+
+  const handleDecisionModeChange = (mode: 'adopt' | 'stable' | 'unsuitable') => {
+    setDecisionMode(mode);
+    setSelectedTreatments(prev =>
+      Object.fromEntries(Object.keys(prev).map(name => [name, mode === 'adopt']))
+    );
+  };
     // 只根據現有處置文字決定卡片的圖示與顏色
   const getTreatmentVisual = (name: string) => {
     const text = name.toLowerCase();
+
 
     const categories = [
       {
@@ -62,10 +76,10 @@ export default function IntoConsult() {
         ],
         emoji: '💉',
         label: '注射／輸液',
-        bg: '#F0FDF9',
-        border: '#A7F3D0',
-        tagBg: '#D1FAE5',
-        tagColor: '#047857',
+        bg: '#EFF6FF',
+        border: '#BFDBFE',
+        tagBg: '#DBEAFE',
+        tagColor: '#1D4ED8',
       },
       {
         keywords: [
@@ -88,10 +102,10 @@ export default function IntoConsult() {
         ],
         emoji: '🩺',
         label: '監測',
-        bg: '#FAF7FF',
-        border: '#E9D5FF',
-        tagBg: '#F3E8FF',
-        tagColor: '#7E22CE',
+        bg: '#EFF6FF',
+        border: '#BFDBFE',
+        tagBg: '#DBEAFE',
+        tagColor: '#1D4ED8',
       },
       {
         keywords: [
@@ -100,29 +114,32 @@ export default function IntoConsult() {
         ],
         emoji: '🫁',
         label: '呼吸支持',
-        bg: '#F0FDFA',
-        border: '#99F6E4',
-        tagBg: '#CCFBF1',
-        tagColor: '#0F766E',
+        bg: '#EFF6FF',
+        border: '#BFDBFE',
+        tagBg: '#DBEAFE',
+        tagColor: '#1D4ED8',
       },
       {
         keywords: ['會診', '照會', '專科醫師'],
         emoji: '🩺',
         label: '會診',
-        bg: '#FAF5FF',
-        border: '#DDD6FE',
-        tagBg: '#EDE9FE',
-        tagColor: '#6D28D9',
+        bg: '#EFF6FF',
+        border: '#BFDBFE',
+        tagBg: '#DBEAFE',
+        tagColor: '#1D4ED8',
       },
     ];
+
 
     // 找出這段文字涉及的所有類型，不修改原本的處置內容
     const matched = categories.filter(category =>
       category.keywords.some(keyword => text.includes(keyword))
     );
 
+
     // 同一句有多種類型時，同時顯示圖示與標籤
     const primary = matched[0];
+
 
     if (!primary) {
       return {
@@ -134,6 +151,7 @@ export default function IntoConsult() {
         tagColor: '#475569',
       };
     }
+
 
     return {
       emoji: matched.map(category => category.emoji).join(' '),
@@ -147,11 +165,12 @@ export default function IntoConsult() {
   // 根據主訴與實際惡化風險機率（riskScore），動態計算成比例的 XAI 貢獻度與處置建議
   const generateXAIAndTreatment = (complaint: string, level: number, riskScore: number, spo2?: number, t?: number) => {
     const text = (complaint || '').toLowerCase();
-    
+   
     // ★ 依照該病患真實的 3hr 風險分數，按比例拆解 XAI 貢獻度，使其合理對應總風險
     const p1 = Math.max(Number((riskScore * 0.55).toFixed(1)), 0.5);
     const p2 = Math.max(Number((riskScore * 0.30).toFixed(1)), 0.3);
     const p3 = Math.max(Number((riskScore * 0.15).toFixed(1)), 0.1);
+
 
     let xai_factors = [
       { name: "主訴症狀與特徵匹配度", impact: p1, type: 'pos' },
@@ -159,12 +178,14 @@ export default function IntoConsult() {
       { name: "年齡與基礎共病風險權重", impact: p3, type: 'pos' }
     ];
 
+
     let treatments: Record<string, boolean> = {
       "安排相關血液與影像檢驗": true,
       "密切監測生命徵象波動": true,
       "給予適當症狀支持治療": false,
       "必要時會診相關專科醫師": false,
     };
+
 
     if (text.includes('胸痛') || text.includes('胸悶')) {
       xai_factors = [
@@ -228,8 +249,15 @@ export default function IntoConsult() {
       };
     }
 
-    return { xai_factors, treatments };
+
+    return {
+      xai_factors,
+      treatments: Object.fromEntries(
+        Object.keys(treatments).map(name => [name, true])
+      ),
+    };
   };
+
 
   // 從後端 API 獲取真實資料庫數據
   useEffect(() => {
@@ -241,24 +269,31 @@ export default function IntoConsult() {
           return String(p.prediction_id) === id || generatedId === id;
         });
 
+
         if (found) {
           let disposition = '急診留觀 / 出院';
+          let selectedDisposition = '急診留觀室 (Observation)';
           try {
-            const distObj = typeof found.admit_distribution === 'string' 
-              ? JSON.parse(found.admit_distribution) 
+            const distObj = typeof found.admit_distribution === 'string'
+              ? JSON.parse(found.admit_distribution)
               : found.admit_distribution;
-            
+           
             if (distObj['ICU']) {
               disposition = 'ICU 病房';
+              selectedDisposition = '轉入加護病房 (ICU Admission)';
             } else if (distObj['Ward']) {
               disposition = '一般病房';
+              selectedDisposition = '轉入住院病房 (Inpatient Ward)';
             }
           } catch (e) {
             console.error("解析動向失敗", e);
           }
 
+
           const dynamicData = generateXAIAndTreatment(found.complaint, found.triage_degree, found.serious_risk_pct, found.spo2, found.t);
           setSelectedTreatments(dynamicData.treatments);
+          setDisposition(selectedDisposition);
+
 
           setPatient({
             id: found.medicalRecordNo || `00${8877665 + data.indexOf(found)}J`,
@@ -277,10 +312,10 @@ export default function IntoConsult() {
             },
             ai_risk_score: found.serious_risk_pct,
             ai_disposition: disposition,
-            ensemble_votes: { 
-              RF: found.serious_risk_pct > 20, 
-              XGB: found.serious_risk_pct > 30, 
-              KNN: found.serious_risk_pct > 40 
+            ensemble_votes: {
+              RF: found.serious_risk_pct > 20,
+              XGB: found.serious_risk_pct > 30,
+              KNN: found.serious_risk_pct > 40
             },
             xai_factors: dynamicData.xai_factors,
             references: [
@@ -297,15 +332,16 @@ export default function IntoConsult() {
       });
   }, [id]);
 
+
   const promptFeedback = (reason: string) => {
     setPendingFeedback(reason);
-    setDoctorFeedback('');
     setIsModalOpen(true);
   };
 
+
   const confirmSubmitFeedback = () => {
     const checkedItems = Object.entries(selectedTreatments)
-      .filter(([, isChecked]) => isChecked)
+      .filter(([, isChecked]) => decisionMode === 'adopt' && isChecked)
       .map(([name]) => name);
     archivePatient({
       patientId: String(id ?? patient.id),
@@ -317,8 +353,9 @@ export default function IntoConsult() {
       complaint: patient.summary || '未提供主訴',
       riskPercent: Number(patient.ai_risk_score) || 0,
       decision: pendingFeedback,
-      doctorNote: doctorFeedback.trim(),
+      doctorNote: '',
       treatments: checkedItems,
+      disposition,
       processedAt: new Date().toISOString(),
       vitals: patient.vitals,
     });
@@ -326,9 +363,11 @@ export default function IntoConsult() {
     navigate('/records');
   };
 
+
   if (loading) {
     return <div style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>載入診間資料中...</div>;
   }
+
 
   if (!patient) {
     return (
@@ -339,14 +378,15 @@ export default function IntoConsult() {
     );
   }
 
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif', position: 'relative' }}>
-      
+     
       {/* ==================== 頂部導覽列與病患資訊 ==================== */}
       <div style={{ backgroundColor: 'white', borderBottom: '1px solid #E2E8F0', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, zIndex: 10 }}>
-        
+       
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button 
+          <button
             type="button"
             onClick={() => navigate(-1)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', background: '#F1F5F9', border: 'none', color: '#64748B', borderRadius: '6px', cursor: 'pointer', transition: '0.2s' }}
@@ -366,6 +406,7 @@ export default function IntoConsult() {
           </div>
         </div>
 
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0', padding: '6px 12px', borderRadius: '8px', color: '#166534', fontSize: '13px', fontWeight: 'bold' }}>
           <Bot size={16} className="text-emerald-500" />
           <span>模型狀態: 正常</span>
@@ -373,16 +414,17 @@ export default function IntoConsult() {
         </div>
       </div>
 
+
       {/* ==================== 主要內容區塊 ==================== */}
       <div style={{ padding: '24px 32px', flex: 1, overflow: 'auto', display: 'flex', gap: '24px', alignItems: 'stretch' }}>
-        
+       
         {/* 左側：AI 惡化預測與 XAI 核心依據 */}
         <div style={{ width: '450px', display: 'flex', flexDirection: 'column', gap: '16px', flexShrink: 0 }}>
-          
+         
           <div style={{ backgroundColor: '#1E1B4B', borderRadius: '12px', padding: '20px', color: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', fontSize: '15px' }}>
-                <Bot size={18} color="#A5B4FC" /> AI 惡化預測 
+                <Bot size={18} color="#A5B4FC" /> AI 惡化預測
               </div>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <span style={{ backgroundColor: patient.ensemble_votes.RF ? '#E11D48' : '#334155', color: '#FFF', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>RF:{patient.ensemble_votes.RF ? '惡化' : '安全'}</span>
@@ -390,6 +432,7 @@ export default function IntoConsult() {
                 <span style={{ backgroundColor: patient.ensemble_votes.KNN ? '#E11D48' : '#334155', color: '#FFF', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>KNN:{patient.ensemble_votes.KNN ? '惡化' : '安全'}</span>
               </div>
             </div>
+
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px' }}>
               <div>
@@ -401,7 +444,7 @@ export default function IntoConsult() {
                   <div style={{ width: `${Math.min(patient.ai_risk_score, 100)}%`, height: '100%', backgroundColor: '#EF4444', borderRadius: '3px', transition: 'width 1s ease' }}></div>
                 </div>
               </div>
-              
+             
               <div>
                 <div style={{ fontSize: '12px', color: '#A5B4FC', marginBottom: '6px' }}>系統預測病患轉歸動向</div>
                 <div style={{ backgroundColor: '#4338CA', borderRadius: '8px', padding: '10px', textAlign: 'center', fontWeight: 'bold', fontSize: '15px', border: '1px solid #4F46E5', color: '#FFF' }}>
@@ -410,6 +453,7 @@ export default function IntoConsult() {
               </div>
             </div>
           </div>
+
 
           <div style={{ backgroundColor: '#FEFCE8', borderRadius: '12px', padding: '20px', border: '1px solid #FEF08A' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -420,6 +464,7 @@ export default function IntoConsult() {
                 特徵貢獻度
               </span>
             </div>
+
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {patient.xai_factors.map((factor: any, index: number) => {
@@ -432,10 +477,11 @@ export default function IntoConsult() {
                 // 將進度條寬度根據實際百分比調整（放大倍率讓視覺更明顯但符合比例）
                 const width = Math.min(Math.abs(factor.impact) * 2.5, 100);
 
+
                 return (
-                  <div key={index} style={{ 
-                    display: 'flex', flexDirection: 'column', padding: '12px 14px', borderRadius: '10px', 
-                    border: `2px solid ${borderColor}`, backgroundColor: bgColor, 
+                  <div key={index} style={{
+                    display: 'flex', flexDirection: 'column', padding: '12px 14px', borderRadius: '10px',
+                    border: `2px solid ${borderColor}`, backgroundColor: bgColor,
                     boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '8px' }}>
@@ -451,30 +497,33 @@ export default function IntoConsult() {
             </div>
           </div>
 
+
         </div>
+
 
         {/* TF-IDF 知識庫比對處置建議 (視覺化)*/}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          
+         
           <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            
+           
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '900', fontSize: '16px', color: '#1E293B' }}>
-                  <BookOpen size={20} color="#4F46E5" /> TF-IDF 知識庫比對處置建議
+                  <BookOpen size={20} color="#2563EB" /> 推薦醫囑明細勾選
                 </div>
               </div>
-              
+             
               <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '16px', marginTop: 0 }}>
-                依據護理主訴文字萃取特徵，比對 Clinical Guidelines PDF，系統已自動勾選指引中萃取標準處置步驟。
+                系統依據病患主訴提供建議處置，請確認勾選後再提交醫師決策。
               </p>
 
-              <div style={{ borderLeft: '4px solid #4F46E5', backgroundColor: '#F8FAFC', borderRadius: '0 8px 8px 0', padding: '18px 20px', borderTop: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', marginBottom: '20px' }}>
+
+              <div style={{ borderLeft: '4px solid #2563EB', backgroundColor: '#F8FAFC', borderRadius: '0 8px 8px 0', padding: '18px 20px', borderTop: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', marginBottom: '20px' }}>
                 <div style={{ fontWeight: 'bold', color: '#1E293B', fontSize: '14px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  💡 建議標準處置 (依據: 臨床實證醫療指引)
+                  💡 建議處置項目
                 </div>
-                
-                
+               
+               
                 {/* 處置分類圖例 */}
                 <div style={{
                   display: 'flex',
@@ -509,6 +558,7 @@ export default function IntoConsult() {
                   ))}
                 </div>
 
+
                 {/* 依原本處置文字產生視覺化卡片 */}
                 <div style={{
                   display: 'grid',
@@ -518,6 +568,7 @@ export default function IntoConsult() {
                   {Object.keys(selectedTreatments).map((name) => {
                     const visual = getTreatmentVisual(name);
                     const checked = selectedTreatments[name];
+
 
                     return (
                       <label
@@ -531,14 +582,13 @@ export default function IntoConsult() {
                           minHeight: '118px',
                           padding: '16px 18px',
                           borderRadius: '18px',
-                          border: `1px dashed ${
-                            checked ? visual.tagColor : visual.border
-                          }`,
-                          backgroundColor: checked ? visual.bg : visual.bg,
+                          border: `1px solid ${checked ? '#2563EB' : visual.border}`,
+                          backgroundColor: checked ? '#EFF6FF' : visual.bg,
                           boxShadow: checked
-                            ? `inset 0 0 0 1px ${visual.border}`
+                            ? 'inset 0 0 0 1px #BFDBFE'
                             : 'none',
-                          cursor: 'pointer',
+                          cursor: decisionMode === 'adopt' ? 'pointer' : 'not-allowed',
+                          opacity: decisionMode === 'adopt' ? 1 : 0.65,
                           overflow: 'hidden',
                           transition: 'all 0.2s ease',
                         }}
@@ -547,6 +597,7 @@ export default function IntoConsult() {
                         <input
                           type="checkbox"
                           checked={checked}
+                          disabled={decisionMode !== 'adopt'}
                           onChange={() => handleCheckboxChange(name)}
                           style={{
                             position: 'absolute',
@@ -554,11 +605,12 @@ export default function IntoConsult() {
                             right: '14px',
                             width: '22px',
                             height: '22px',
-                            accentColor: '#4F46E5',
-                            cursor: 'pointer',
+                            accentColor: '#2563EB',
+                            cursor: decisionMode === 'adopt' ? 'pointer' : 'not-allowed',
                             zIndex: 2,
                           }}
                         />
+
 
                         {/* 淡色 Emoji 浮水印 */}
                         <span
@@ -575,6 +627,7 @@ export default function IntoConsult() {
                         >
                           {visual.emoji.split(' ')[0]}
                         </span>
+
 
                         {/* 分類標籤 */}
                         <span style={{
@@ -594,6 +647,7 @@ export default function IntoConsult() {
                           {visual.emoji} {visual.label}
                         </span>
 
+
                         {/* 原本的處置文字：不更改、不重新產生 */}
                         <span style={{
                           position: 'relative',
@@ -612,6 +666,7 @@ export default function IntoConsult() {
                   })}
                 </div>
 
+
                 {/* 勾選數量與操作 */}
                 <div style={{
                   display: 'flex',
@@ -628,16 +683,18 @@ export default function IntoConsult() {
                     color: '#64748B',
                   }}>
                     已勾選處置項目：
-                    <strong style={{ color: '#4F46E5' }}>
+                    <strong style={{ color: '#2563EB' }}>
                       {' '}{Object.values(selectedTreatments).filter(Boolean).length}
                     </strong>
                     {' / '}{Object.keys(selectedTreatments).length} 項
                   </span>
 
+
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
+                    visibility: decisionMode === 'adopt' ? 'visible' : 'hidden',
                   }}>
                     <button
                       type="button"
@@ -651,7 +708,7 @@ export default function IntoConsult() {
                       style={{
                         border: 'none',
                         background: 'transparent',
-                        color: '#4F46E5',
+                        color: '#2563EB',
                         fontSize: '13px',
                         cursor: 'pointer',
                       }}
@@ -659,7 +716,9 @@ export default function IntoConsult() {
                       全選
                     </button>
 
+
                     <span style={{ color: '#CBD5E1' }}>•</span>
+
 
                     <button
                       type="button"
@@ -683,52 +742,98 @@ export default function IntoConsult() {
                   </div>
                 </div>
 
+
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
-                  <FileText size={14} /> 參考文獻比對來源 (PDF)
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  {patient.references.map((ref: any, idx: number) => (
-                    <div key={idx} style={{ padding: '10px 12px', border: '1px solid #E2E8F0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FAFAFA' }}>
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1E293B', marginBottom: '2px' }}>{ref.title}</div>
-                        <div style={{ fontSize: '11px', color: '#94A3B8' }}>{ref.desc}</div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '40px' }}>
-                        <span style={{ color: '#10B981', fontWeight: 'bold', fontSize: '13px' }}>{ref.score}</span>
-                        <span style={{ color: '#94A3B8', fontSize: '10px' }}>{ref.page}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+            </div>
+
+
+            {/* 醫師決策 */}
+            <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '16px', marginTop: '10px' }}>
+              <div style={{ fontWeight: '900', fontSize: '14px', color: '#334155', marginBottom: '10px' }}>
+                是否採納建議決策
+              </div>
+
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                <button
+                  type="button"
+                  aria-pressed={decisionMode === 'adopt'}
+                  onClick={() => handleDecisionModeChange('adopt')}
+                  style={{ padding: '12px 10px', backgroundColor: decisionMode === 'adopt' ? '#2563EB' : 'white', border: `1px solid ${decisionMode === 'adopt' ? '#93C5FD' : '#CBD5E1'}`, borderRadius: '10px', color: decisionMode === 'adopt' ? 'white' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  ✓ 同意並採納建議
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={decisionMode === 'stable'}
+                  onClick={() => handleDecisionModeChange('stable')}
+                  style={{ padding: '12px 10px', backgroundColor: decisionMode === 'stable' ? '#F59E0B' : 'white', border: `1px solid ${decisionMode === 'stable' ? '#FCD34D' : '#CBD5E1'}`, borderRadius: '10px', color: decisionMode === 'stable' ? 'white' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  − 病況穩定，暫不處理
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={decisionMode === 'unsuitable'}
+                  onClick={() => handleDecisionModeChange('unsuitable')}
+                  style={{ padding: '12px 10px', backgroundColor: decisionMode === 'unsuitable' ? '#E11D48' : 'white', border: `1px solid ${decisionMode === 'unsuitable' ? '#FDA4AF' : '#CBD5E1'}`, borderRadius: '10px', color: decisionMode === 'unsuitable' ? 'white' : '#475569', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  ⚠ 處置建議不適當
+                </button>
               </div>
             </div>
 
-            {/* 回饋收集 */}
-            <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '20px', marginTop: '10px' }}>
-              <div style={{ fontWeight: '900', fontSize: '15px', color: '#0F172A', marginBottom: '12px' }}>
-                是否採納建議
-              </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                <button onClick={() => promptFeedback('同意並採納 AI 預測與處置建議')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', backgroundColor: '#EEF2FF', border: '1px solid #E0E7FF', borderRadius: '8px', color: '#4F46E5', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left' }}>
-                  <span>1. 同意並採納建議</span><ChevronRight size={16} color="#818CF8" />
-                </button>
-                <button onClick={() => promptFeedback('病人狀況穩定，暫不處理')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', color: '#475569', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left' }}>
-                  <span>2. 病人狀況穩定，暫不處理</span><ChevronRight size={16} color="#94A3B8" />
-                </button>
-                <button onClick={() => promptFeedback('處置建議不適當')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', backgroundColor: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '8px', color: '#DC2626', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', textAlign: 'left' }}>
-                  <span>3. 處置建議不適當</span><ChevronRight size={16} color="#FCA5A5" />
-                </button>
-              </div>
+            {/* 急診去向 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 16px', marginTop: '14px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '10px' }}>
+              <label htmlFor="direct-disposition-select" style={{ flexShrink: 0, fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>
+                選擇急診去向
+              </label>
+              <select
+                id="direct-disposition-select"
+                value={disposition}
+                onChange={(event) => setDisposition(event.target.value)}
+                style={{ flex: 1, minWidth: 0, padding: '10px 12px', border: '1px solid #BFDBFE', borderRadius: '8px', backgroundColor: 'white', color: '#1E293B', fontSize: '13px', fontWeight: 'bold' }}
+              >
+                <option value="急診留觀室 (Observation)">🟡 急診留觀室（繼續觀察 6-24 小時）</option>
+                <option value="離院衛教 (Discharge)">🟢 症狀緩解帶藥離院</option>
+                <option value="轉入住院病房 (Inpatient Ward)">🔵 轉入住院病房</option>
+                <option value="轉入加護病房 (ICU Admission)">🔴 轉入加護病房</option>
+                <option value="緊急送開刀房/導管室 (Emergency OR/Cath Lab)">⚡ 緊急送開刀房／心導管室</option>
+              </select>
             </div>
+
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '14px 16px', marginTop: '14px', backgroundColor: '#F8FAFC', borderRadius: '10px' }}>
+              <span style={{ fontSize: '12px', color: '#64748B' }}>
+                目前決策：<strong style={{ color: '#2563EB' }}>
+                  {decisionMode === 'adopt' ? '同意並採納建議' : decisionMode === 'stable' ? '病況穩定，暫不處理' : '處置建議不適當'}
+                </strong>
+                （已選 {Object.values(selectedTreatments).filter(Boolean).length} 項）
+              </span>
+              <button
+                type="button"
+                onClick={() => promptFeedback(
+                  decisionMode === 'adopt'
+                    ? '同意並採納 AI 預測與處置建議'
+                    : decisionMode === 'stable'
+                      ? '病人狀況穩定，暫不處理'
+                      : '處置建議不適當'
+                )}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '11px 16px', backgroundColor: '#2563EB', border: 'none', borderRadius: '8px', color: 'white', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 8px rgba(37,99,235,0.2)' }}
+              >
+                確認處置並送出結案
+              </button>
+            </div>
+
 
           </div>
 
+
         </div>
       </div>
+
 
       {/* 確認彈出視窗 */}
       {isModalOpen && (
@@ -739,20 +844,10 @@ export default function IntoConsult() {
               <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#0F172A' }}>確認提交回饋</h3>
             </div>
             <p style={{ color: '#475569', lineHeight: '1.6', marginBottom: '24px' }}>
-              您選擇了 <strong style={{ color: '#0F172A' }}>"{pendingFeedback}"</strong>。<br/>
-              提交後將納入模型再訓練參考，是否確認送出？
+              您選擇了 <strong style={{ color: '#0F172A' }}>"{pendingFeedback}"</strong>，急診去向為
+              <strong style={{ color: '#0F172A' }}>「{disposition}」</strong>。<br/>
+              確認後將完成結案並將病患資料歸檔。
             </p>
-            <label htmlFor="doctor-feedback" style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '14px', fontWeight: 'bold' }}>
-              醫生文字回饋 <span style={{ color: '#64748B', fontWeight: 'normal' }}>（選填）</span>
-            </label>
-            <textarea
-              id="doctor-feedback"
-              value={doctorFeedback}
-              onChange={(event) => setDoctorFeedback(event.target.value)}
-              placeholder="可補充決策原因或臨床觀察..."
-              rows={4}
-              style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', marginBottom: '20px', border: '1px solid #CBD5E1', borderRadius: '8px', resize: 'vertical', font: 'inherit' }}
-            />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setIsModalOpen(false)} style={{ padding: '8px 16px', backgroundColor: '#F1F5F9', color: '#475569', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
                 取消
@@ -764,6 +859,7 @@ export default function IntoConsult() {
           </div>
         </div>
       )}
+
 
     </div>
   );
